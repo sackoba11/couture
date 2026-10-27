@@ -6,6 +6,7 @@ import '../data/media_storage.dart';
 import '../models/client.dart';
 import '../models/measurement.dart';
 import '../models/measurement_sheet.dart';
+import '../models/pattern.dart';
 import '../utils/formatters.dart';
 import '../utils/garment_style.dart';
 import '../utils/photo_picker.dart';
@@ -14,12 +15,20 @@ import '../widgets/photo_thumb.dart';
 import '../widgets/section_card.dart';
 import 'photo_viewer_screen.dart';
 
-/// Saisie d'une fiche : vêtement, photos (tissu et modèle) et mesures.
+/// Saisie d'une fiche : vêtement, patron, livraison, photos et mesures.
 class SheetFormScreen extends StatefulWidget {
-  const SheetFormScreen({super.key, required this.client, this.sheet});
+  const SheetFormScreen({
+    super.key,
+    required this.client,
+    this.sheet,
+    this.initialPattern,
+  });
 
   final Client client;
   final MeasurementSheet? sheet;
+
+  /// Patron présélectionné depuis le catalogue.
+  final SewingPattern? initialPattern;
 
   @override
   State<SheetFormScreen> createState() => _SheetFormScreenState();
@@ -40,8 +49,15 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   final List<_CustomMeasureRow> _retiredRows = [];
 
   late String _garmentType;
+  late String _patternId;
+  DateTime? _deliveryDate;
+  bool _showAllMeasurements = false;
   late List<String> _fabricPhotos;
   late List<String> _modelPhotos;
+
+  /// Mesures conservées telles quelles : elles ne figurent plus dans le
+  /// formulaire (ancienne version) mais ne doivent jamais être perdues.
+  late final Map<String, double> _extraMeasurements;
 
   /// Photos importées pendant cette session (supprimées si on abandonne).
   final List<String> _addedPhotos = [];
@@ -55,6 +71,191 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
 
   bool get _isEditing => widget.sheet != null;
 
+  SewingPattern get _pattern =>
+      patternById(_patternId) ?? patternForGarment(_garmentType);
+
+  /// Mesures visibles : celles du patron, plus toute mesure déjà saisie
+  /// (pour ne jamais masquer une valeur existante).
+  Set<String> get _visibleMeasurementIds {
+    if (_showAllMeasurements) return kFormMeasurementIds;
+    return {
+      ..._pattern.keyMeasurements,
+      for (final entry in _measureControllers.entries)
+        if (entry.value.text.trim().isNotEmpty) entry.key,
+    };
+  }
+
+  Future<void> _pickPattern() async {
+    final selected = await showModalBottomSheet<SewingPattern>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.7,
+          maxChildSize: 0.92,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Choisir un patron',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Les mesures affichées s\'adapteront à la coupe.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: Color(0xFF9A8A8F),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    itemCount: kMalianPatterns.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final pattern = kMalianPatterns[index];
+                      final selected = pattern.id == _patternId;
+                      return Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => Navigator.pop(context, pattern),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: selected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : const Color(0xFFEFE3DC),
+                                width: selected ? 1.6 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFBF1EB),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    pattern.icon,
+                                    color: const Color(0xFF9A6A52),
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pattern.name,
+                                        style: const TextStyle(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        pattern.tagline,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          height: 1.3,
+                                          color: Color(0xFF8A767D),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (selected)
+                                  Icon(
+                                    Icons.check_circle,
+                                    size: 20,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _patternId = selected.id;
+      _garmentType = selected.garmentType;
+    });
+  }
+
+  Future<void> _pickDeliveryDate() async {
+    final now = DateTime.now();
+    final initial = _deliveryDate ?? now.add(const Duration(days: 7));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isBefore(now) ? now : initial,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 6),
+      helpText: 'Date de livraison',
+      cancelText: 'Annuler',
+      confirmText: 'Choisir',
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _deliveryDate = DateUtils.dateOnly(picked));
+  }
+
+  void _quickDelivery(int days) {
+    setState(() {
+      _deliveryDate = DateUtils.dateOnly(
+        DateTime.now().add(Duration(days: days)),
+      );
+    });
+  }
+
+  void _selectGarment(String type) {
+    setState(() {
+      _garmentType = type;
+      _patternId = patternForGarment(type).id;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,9 +265,21 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
       text: sheet?.title ?? 'Fiche du ${formatShortDate(DateTime.now())}',
     );
     _notesController = TextEditingController(text: sheet?.notes ?? '');
-    _garmentType = sheet?.garmentType ?? kGarmentTypes.first;
+    _garmentType =
+        sheet?.garmentType ??
+        widget.initialPattern?.garmentType ??
+        kGarmentTypes.first;
+    _patternId =
+        sheet?.patternId ??
+        widget.initialPattern?.id ??
+        patternForGarment(_garmentType).id;
+    _deliveryDate = sheet?.deliveryDate;
     _fabricPhotos = [...?sheet?.fabricPhotos];
     _modelPhotos = [...?sheet?.modelPhotos];
+    _extraMeasurements = {
+      for (final entry in (sheet?.measurements ?? const {}).entries)
+        if (!kFormMeasurementIds.contains(entry.key)) entry.key: entry.value,
+    };
 
     for (final group in kMeasurementGroups) {
       for (final field in group.fields) {
@@ -207,7 +420,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
       return;
     }
 
-    final measurements = <String, double>{};
+    final measurements = <String, double>{..._extraMeasurements};
     for (final entry in _measureControllers.entries) {
       final text = entry.value.text.trim();
       if (text.isEmpty) continue;
@@ -268,6 +481,8 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
           ? 'Fiche du ${formatShortDate(now)}'
           : _titleController.text.trim(),
       garmentType: normalizeGarmentType(_garmentType),
+      patternId: _patternId,
+      deliveryDate: _deliveryDate,
       measurements: measurements,
       customMeasurements: custom,
       fabricPhotos: List.unmodifiable(_fabricPhotos),
@@ -298,6 +513,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
 
   bool get _hasContent {
     if (_fabricPhotos.isNotEmpty || _modelPhotos.isNotEmpty) return true;
+    if (_deliveryDate != null) return true;
     if (_notesController.text.trim().isNotEmpty) return true;
     if (_measureControllers.values.any((c) => c.text.trim().isNotEmpty)) {
       return true;
@@ -348,6 +564,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final visibleIds = _visibleMeasurementIds;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -422,10 +639,179 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                           ChoiceChip(
                             label: Text(type),
                             selected: _garmentType == type,
-                            onSelected: (_) =>
-                                setState(() => _garmentType = type),
+                            onSelected: (_) => _selectGarment(type),
                           ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              SectionCard(
+                title: 'Patron',
+                icon: Icons.architecture,
+                trailing: TextButton(
+                  onPressed: _pickPattern,
+                  child: const Text('Changer'),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    InkWell(
+                      onTap: _pickPattern,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFBF3EE),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFF1E6DF)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _pattern.icon,
+                                color: const Color(0xFF9A6A52),
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _pattern.name,
+                                    style: const TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _pattern.tagline,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      height: 1.3,
+                                      color: Color(0xFF8A767D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.unfold_more,
+                              size: 18,
+                              color: Color(0xFFB7A39B),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${_pattern.keyMeasurements.length} mesures utiles '
+                      'affichées pour ce patron. Les autres restent '
+                      'accessibles avec « Toutes ».',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: Color(0xFF9A8A8F),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              SectionCard(
+                title: 'Livraison',
+                icon: Icons.event_available_outlined,
+                trailing: _deliveryDate == null
+                    ? null
+                    : TextButton(
+                        onPressed: () =>
+                            setState(() => _deliveryDate = null),
+                        child: const Text('Retirer'),
+                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _pickDeliveryDate,
+                      icon: const Icon(
+                        Icons.calendar_month_outlined,
+                        size: 18,
+                      ),
+                      label: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _deliveryDate == null
+                              ? 'Choisir une date de livraison'
+                              : formatFullDate(_deliveryDate!),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        alignment: Alignment.centerLeft,
+                        minimumSize: const Size(0, 50),
+                      ),
+                    ),
+                    if (_deliveryDate != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: Color(0xFF9A6A52),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Livraison ${formatDeliveryCountdown(_deliveryDate!)}',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF8C6239),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 7,
+                      runSpacing: 7,
+                      children: [
+                        ActionChip(
+                          label: const Text('Dans 7 jours'),
+                          onPressed: () => _quickDelivery(7),
+                        ),
+                        ActionChip(
+                          label: const Text('Dans 15 jours'),
+                          onPressed: () => _quickDelivery(15),
+                        ),
+                        ActionChip(
+                          label: const Text('Dans 30 jours'),
+                          onPressed: () => _quickDelivery(30),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Cette date servira aux rappels des commandes proches.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: Color(0xFF9A8A8F),
+                      ),
                     ),
                   ],
                 ),
@@ -478,29 +864,55 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                       ),
                     ),
                   ),
-                  Text(
-                    'en cm',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF9A8A8F),
+                  TextButton.icon(
+                    onPressed: () => setState(
+                      () => _showAllMeasurements = !_showAllMeasurements,
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    icon: Icon(
+                      _showAllMeasurements
+                          ? Icons.filter_alt_off_outlined
+                          : Icons.filter_alt_outlined,
+                      size: 16,
+                    ),
+                    label: Text(
+                      _showAllMeasurements ? 'Patron' : 'Toutes',
+                      style: const TextStyle(fontSize: 12.5),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
+              const SizedBox(height: 2),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Remplissez seulement les mesures utiles au vêtement.',
-                  style: TextStyle(fontSize: 12.5, color: Color(0xFF9A8A8F)),
+                  _showAllMeasurements
+                      ? 'Toutes les mesures sont affichées.'
+                      : 'Mesures du patron ${_pattern.name}, plus celles déjà '
+                            'remplies.',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: Color(0xFF9A8A8F),
+                  ),
                 ),
               ),
               for (final group in kMeasurementGroups) ...[
-                _MeasurementGroupCard(
-                  group: group,
-                  controllers: _measureControllers,
-                  validator: _validateMeasure,
-                ),
-                const SizedBox(height: 12),
+                if (group.fields.any((field) => visibleIds.contains(field.id)))
+                  _MeasurementGroupCard(
+                    title: group.title,
+                    icon: group.icon,
+                    fields: [
+                      for (final field in group.fields)
+                        if (visibleIds.contains(field.id)) field,
+                    ],
+                    controllers: _measureControllers,
+                    validator: _validateMeasure,
+                  ),
+                if (group.fields.any((field) => visibleIds.contains(field.id)))
+                  const SizedBox(height: 12),
               ],
               SectionCard(
                 title: 'Mesures personnalisées',
@@ -548,8 +960,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                   maxLines: 6,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                    hintText:
-                        'Détails du modèle, retouches, date de livraison…',
+                    hintText: 'Détails du modèle, retouches, préférences…',
                   ),
                 ),
               ),
@@ -699,20 +1110,24 @@ class _AddPhotoButton extends StatelessWidget {
 
 class _MeasurementGroupCard extends StatelessWidget {
   const _MeasurementGroupCard({
-    required this.group,
+    required this.title,
+    required this.icon,
+    required this.fields,
     required this.controllers,
     required this.validator,
   });
 
-  final MeasurementGroup group;
+  final String title;
+  final IconData icon;
+  final List<MeasurementField> fields;
   final Map<String, TextEditingController> controllers;
   final FormFieldValidator<String> validator;
 
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      title: group.title,
-      icon: group.icon,
+      title: title,
+      icon: icon,
       child: LayoutBuilder(
         builder: (context, constraints) {
           const gap = 10.0;
@@ -721,15 +1136,14 @@ class _MeasurementGroupCard extends StatelessWidget {
             spacing: gap,
             runSpacing: gap,
             children: [
-              for (var i = 0; i < group.fields.length; i++)
+              for (var i = 0; i < fields.length; i++)
                 SizedBox(
-                  width:
-                      i == group.fields.length - 1 && group.fields.length.isOdd
+                  width: i == fields.length - 1 && fields.length.isOdd
                       ? constraints.maxWidth
                       : half,
                   child: _MeasureField(
-                    field: group.fields[i],
-                    controller: controllers[group.fields[i].id]!,
+                    field: fields[i],
+                    controller: controllers[fields[i].id]!,
                     validator: validator,
                   ),
                 ),

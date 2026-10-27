@@ -2,8 +2,24 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/client.dart';
 import '../models/measurement_sheet.dart';
+import '../utils/formatters.dart';
 import 'app_database.dart';
 import 'media_storage.dart';
+
+/// Une fiche dont la livraison approche, avec son client.
+class DeliveryOverview {
+  const DeliveryOverview({required this.sheet, required this.client});
+
+  final MeasurementSheet sheet;
+  final Client client;
+
+  DateTime get deliveryDate => sheet.deliveryDate!;
+
+  int daysLeft({DateTime? now}) => daysUntil(deliveryDate, now: now);
+
+  DeliveryStatus status({DateTime? now}) =>
+      deliveryStatus(deliveryDate, now: now);
+}
 
 /// Point d'entrée unique pour lire et enregistrer les données de l'atelier.
 class CoutureRepository {
@@ -114,6 +130,64 @@ class CoutureRepository {
     final db = await _db;
     await db.delete('sheets', where: 'id = ?', whereArgs: [sheet.id]);
     await _deleteMediaFolder(sheet.id);
+  }
+
+  // ------------------------------------------------------------ Livraisons
+
+  /// Fiches dont la date de livraison est proche : les retards récents
+  /// (7 derniers jours) puis les [withinDays] prochains jours, de la plus
+  /// ancienne à la plus lointaine.
+  Future<List<DeliveryOverview>> upcomingDeliveries({
+    int withinDays = 21,
+    int limit = 8,
+  }) async {
+    final db = await _db;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = today.subtract(const Duration(days: 7));
+    final end = today.add(Duration(days: withinDays + 1));
+
+    final rows = await db.rawQuery(
+      '''
+      SELECT s.*,
+             c.full_name AS client_name,
+             c.phone AS client_phone,
+             c.notes AS client_notes,
+             c.created_at AS client_created_at,
+             c.updated_at AS client_updated_at
+      FROM sheets s
+      INNER JOIN clients c ON c.id = s.client_id
+      WHERE s.delivery_date IS NOT NULL
+        AND s.delivery_date >= ?
+        AND s.delivery_date < ?
+      ORDER BY s.delivery_date ASC
+      LIMIT ?
+      ''',
+      [
+        start.millisecondsSinceEpoch,
+        end.millisecondsSinceEpoch,
+        limit,
+      ],
+    );
+
+    return rows.map((row) {
+      final client = Client(
+        id: row['client_id']! as String,
+        fullName: row['client_name']! as String,
+        phone: (row['client_phone'] as String?) ?? '',
+        notes: (row['client_notes'] as String?) ?? '',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          row['client_created_at']! as int,
+        ),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+          row['client_updated_at']! as int,
+        ),
+      );
+      return DeliveryOverview(
+        sheet: MeasurementSheet.fromMap(row),
+        client: client,
+      );
+    }).toList();
   }
 
   /// Le nettoyage des photos ne doit jamais empêcher la suppression des

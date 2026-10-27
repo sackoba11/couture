@@ -8,7 +8,7 @@ class AppDatabase {
   AppDatabase._();
 
   static final AppDatabase instance = AppDatabase._();
-  static const int _version = 1;
+  static const int _version = 2;
 
   Database? _database;
   Future<Database>? _opening;
@@ -69,6 +69,8 @@ class AppDatabase {
               client_id TEXT NOT NULL,
               title TEXT NOT NULL,
               garment_type TEXT NOT NULL,
+              pattern_id TEXT,
+              delivery_date INTEGER,
               measurements TEXT NOT NULL DEFAULT '{}',
               custom_measurements TEXT NOT NULL DEFAULT '[]',
               fabric_photos TEXT NOT NULL DEFAULT '[]',
@@ -82,6 +84,20 @@ class AppDatabase {
           await db.execute(
             'CREATE INDEX idx_sheets_client ON sheets (client_id, updated_at)',
           );
+          await db.execute(
+            'CREATE INDEX idx_sheets_delivery ON sheets (delivery_date)',
+          );
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute('ALTER TABLE sheets ADD COLUMN pattern_id TEXT');
+            await db.execute(
+              'ALTER TABLE sheets ADD COLUMN delivery_date INTEGER',
+            );
+            await db.execute(
+              'CREATE INDEX idx_sheets_delivery ON sheets (delivery_date)',
+            );
+          }
         },
       ),
     );

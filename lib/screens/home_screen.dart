@@ -6,6 +6,7 @@ import '../data/couture_repository.dart';
 import '../models/client.dart';
 import '../utils/formatters.dart';
 import '../widgets/client_avatar.dart';
+import '../widgets/client_picker.dart';
 import '../widgets/empty_state.dart';
 import 'client_detail_screen.dart';
 import 'client_form_screen.dart';
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final CoutureRepository _repository = CoutureRepository.instance;
 
   late Future<List<ClientOverview>> _clients;
+  late Future<List<DeliveryOverview>> _deliveries;
   Timer? _debounce;
   String _query = '';
 
@@ -32,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _clients = _repository.clients();
+    _deliveries = _repository.upcomingDeliveries();
   }
 
   @override
@@ -45,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       if (query != null) _query = query;
       _clients = _repository.clients(query: _query);
+      _deliveries = _repository.upcomingDeliveries();
     });
   }
 
@@ -70,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _createSheet() async {
-    final client = await _pickClient();
+    final client = await showClientPicker(context);
     if (client == null || !mounted) return;
     final sheetId = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => SheetFormScreen(client: client)),
@@ -84,87 +88,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) _reload();
   }
 
-  Future<Client?> _pickClient() async {
-    final overviews = await _repository.clients();
-    if (!mounted) return null;
-    if (overviews.isEmpty) {
-      final created = await Navigator.of(
-        context,
-      ).push<bool>(MaterialPageRoute(builder: (_) => const ClientFormScreen()));
-      if (created != true) return null;
-      final refreshed = await _repository.clients();
-      return refreshed.isEmpty ? null : refreshed.first.client;
-    }
-
-    return showModalBottomSheet<Client>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Pour quel client ?',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.separated(
-                    controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: overviews.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final overview = overviews[index];
-                      return ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: const BorderSide(color: Color(0xFFEFE3DC)),
-                        ),
-                        tileColor: Colors.white,
-                        leading: ClientAvatar(
-                          initials: overview.client.initials,
-                          seed: overview.client.fullName,
-                          size: 42,
-                        ),
-                        title: Text(
-                          overview.client.fullName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          overview.sheetCount == 0
-                              ? 'Aucune fiche'
-                              : '${overview.sheetCount} '
-                                    '${plural(overview.sheetCount, 'fiche')}',
-                        ),
-                        onTap: () => Navigator.pop(context, overview.client),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  Future<void> _openDelivery(DeliveryOverview delivery) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SheetSummaryScreen(sheetId: delivery.sheet.id),
+      ),
     );
+    if (mounted) _reload();
   }
 
   @override
@@ -222,6 +152,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          FutureBuilder<List<DeliveryOverview>>(
+            future: _deliveries,
+            builder: (context, snapshot) {
+              final deliveries = snapshot.data ?? const <DeliveryOverview>[];
+              if (deliveries.isEmpty) return const SizedBox.shrink();
+              return _DeliveryBanner(
+                deliveries: deliveries,
+                onTap: _openDelivery,
+              );
+            },
+          ),
           Expanded(
             child: FutureBuilder<List<ClientOverview>>(
               future: _clients,
@@ -273,9 +214,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    final future = _repository.clients(query: _query);
-                    setState(() => _clients = future);
-                    await future;
+                    final clients = _repository.clients(query: _query);
+                    final deliveries = _repository.upcomingDeliveries();
+                    setState(() {
+                      _clients = clients;
+                      _deliveries = deliveries;
+                    });
+                    await Future.wait([clients, deliveries]);
                   },
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
@@ -301,6 +246,236 @@ class _HomeScreenState extends State<HomeScreen> {
         label: const Text('Nouvelle fiche'),
       ),
     );
+  }
+}
+
+/// Bandeau des livraisons à venir (préfiguration des notifications locales).
+class _DeliveryBanner extends StatelessWidget {
+  const _DeliveryBanner({required this.deliveries, required this.onTap});
+
+  final List<DeliveryOverview> deliveries;
+  final ValueChanged<DeliveryOverview> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.local_shipping_outlined,
+                  size: 17,
+                  color: Color(0xFF7B2D42),
+                ),
+                const SizedBox(width: 7),
+                const Flexible(
+                  child: Text(
+                    'Livraisons proches',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B2D42),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${deliveries.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                const Text(
+                  '21 jours',
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFFB7A39B)),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 92,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: deliveries.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 9),
+              itemBuilder: (context, index) {
+                final delivery = deliveries[index];
+                return _DeliveryCard(
+                  delivery: delivery,
+                  onTap: () => onTap(delivery),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeliveryCard extends StatelessWidget {
+  const _DeliveryCard({required this.delivery, required this.onTap});
+
+  final DeliveryOverview delivery;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = delivery.status();
+    final palette = _deliveryPalette(status);
+    final date = delivery.deliveryDate;
+
+    return SizedBox(
+      width: 236,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEFE3DC)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: palette.background,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${date.day}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                          color: palette.foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        formatMonthShort(date),
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: palette.foreground.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        delivery.client.fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${delivery.sheet.title} · '
+                        '${delivery.sheet.pattern.name}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF8A767D),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 11.5,
+                            color: palette.foreground,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              formatDeliveryCountdown(date),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: palette.foreground,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+({Color background, Color foreground}) _deliveryPalette(DeliveryStatus status) {
+  switch (status) {
+    case DeliveryStatus.late:
+      return (
+        background: const Color(0xFFFBE7E5),
+        foreground: const Color(0xFFB3261E),
+      );
+    case DeliveryStatus.today:
+      return (
+        background: const Color(0xFFFBEBDD),
+        foreground: const Color(0xFF9C5227),
+      );
+    case DeliveryStatus.soon:
+      return (
+        background: const Color(0xFFFBF1E4),
+        foreground: const Color(0xFF8C6239),
+      );
+    case DeliveryStatus.upcoming:
+      return (
+        background: const Color(0xFFF2EEE9),
+        foreground: const Color(0xFF7A5C4C),
+      );
   }
 }
 
@@ -385,11 +560,15 @@ class _ClientCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          formatRelativeDate(overview.lastActivity),
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: Color(0xFF9A8A8F),
+                        Flexible(
+                          child: Text(
+                            formatRelativeDate(overview.lastActivity),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF9A8A8F),
+                            ),
                           ),
                         ),
                       ],

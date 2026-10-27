@@ -5,6 +5,8 @@ import '../models/measurement.dart';
 /// Icône associée au type de vêtement.
 IconData garmentIcon(String type) {
   switch (type) {
+    case 'Boubou':
+      return Icons.dry_cleaning;
     case 'Robe':
       return Icons.woman;
     case 'Chemise':

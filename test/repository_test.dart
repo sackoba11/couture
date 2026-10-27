@@ -4,6 +4,7 @@ import 'package:couture/data/app_database.dart';
 import 'package:couture/data/couture_repository.dart';
 import 'package:couture/models/client.dart';
 import 'package:couture/models/measurement_sheet.dart';
+import 'package:couture/utils/formatters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -32,6 +33,8 @@ void main() {
       clientId: 'client_1',
       title: title,
       garmentType: 'Robe',
+      patternId: 'robe_sirene',
+      deliveryDate: DateTime(2026, 3, 20),
       measurements: const {'tour_poitrine': 92, 'tour_taille': 74.5},
       fabricPhotos: const ['sheet_1/tissu.jpg'],
       createdAt: now,
@@ -82,6 +85,46 @@ void main() {
     expect(stored!.measurements['tour_taille'], 74.5);
     expect(stored.fabricPhotos, ['sheet_1/tissu.jpg']);
     expect(stored.measuredCount, 2);
+    expect(stored.patternId, 'robe_sirene');
+    expect(stored.deliveryDate, DateTime(2026, 3, 20));
+  });
+
+  test('les livraisons proches sont triées et rattachées au client', () async {
+    await repository.saveClient(buildClient());
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day);
+
+    MeasurementSheet withDelivery(String id, int inDays) {
+      return MeasurementSheet(
+        id: id,
+        clientId: 'client_1',
+        title: 'Commande $id',
+        garmentType: 'Robe',
+        deliveryDate: day.add(Duration(days: inDays)),
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    await repository.saveSheet(withDelivery('sheet_late', -2));
+    await repository.saveSheet(withDelivery('sheet_soon', 2));
+    await repository.saveSheet(withDelivery('sheet_later', 9));
+    await repository.saveSheet(withDelivery('sheet_far', 40));
+    await repository.saveSheet(buildSheet(id: 'sheet_none'));
+    await repository.saveSheet(
+      buildSheet(id: 'sheet_no_date').copyWith(clearDeliveryDate: true),
+    );
+
+    final upcoming = await repository.upcomingDeliveries(withinDays: 21);
+    expect(upcoming.map((d) => d.sheet.id), [
+      'sheet_late',
+      'sheet_soon',
+      'sheet_later',
+    ]);
+    expect(upcoming.first.status(), DeliveryStatus.late);
+    expect(upcoming.first.client.fullName, 'Awa Diop');
+    expect(upcoming[1].daysLeft(), 2);
+    expect(upcoming[1].status(), DeliveryStatus.soon);
   });
 
   test('la recherche trouve un client par nom ou téléphone', () async {

@@ -8,10 +8,12 @@ import '../data/media_storage.dart';
 import '../models/client.dart';
 import '../models/measurement.dart';
 import '../models/measurement_sheet.dart';
+import '../models/pattern.dart';
 import '../utils/formatters.dart';
 import '../utils/garment_style.dart';
 import '../widgets/client_avatar.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/pattern_sketch.dart';
 import '../widgets/section_card.dart';
 import 'photo_viewer_screen.dart';
 import 'sheet_form_screen.dart';
@@ -223,6 +225,8 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
     }
 
     final sheet = data.sheet;
+    final pattern = sheet.pattern;
+    final missing = missingMeasurements(pattern, sheet.measurements);
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -329,6 +333,68 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
             ],
           ),
         ),
+        if (sheet.deliveryDate != null) ...[
+          const SizedBox(height: 12),
+          _DeliveryInfo(date: sheet.deliveryDate!),
+        ],
+        const SizedBox(height: 14),
+        SectionCard(
+          title: 'Patron ${pattern.name}',
+          icon: Icons.architecture,
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFBF1EB),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Text(
+              'dynamique',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF9A6A52),
+              ),
+            ),
+          ),
+          child: Column(
+            children: [
+              PatternSketch(
+                pattern: pattern,
+                measurements: sheet.measurements,
+                height: 300,
+              ),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 14,
+                    color: Color(0xFFB4643F),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      missing.isEmpty
+                          ? 'Dessin généré à partir des '
+                                '${sheet.measurements.length} mesures de la '
+                                'fiche.'
+                          : 'Dessin basé sur les mesures saisies. Complétez '
+                                '${missing.take(3).map(measurementLabel).join(', ')}'
+                                '${missing.length > 3 ? '…' : ''} pour '
+                                'l\'affiner.',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        height: 1.4,
+                        color: Color(0xFF9A8A8F),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 24),
         Row(
           children: [
@@ -388,6 +454,15 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
               ),
               const SizedBox(height: 10),
             ],
+          if (sheet.legacyMeasurements.isNotEmpty)
+            _MeasureGroupCard(
+              title: 'Mesures complémentaires',
+              icon: Icons.history,
+              entries: [
+                for (final entry in sheet.legacyMeasurements.entries)
+                  MapEntry(measurementLabel(entry.key), entry.value),
+              ],
+            ),
           if (sheet.customMeasurements.isNotEmpty)
             _MeasureGroupCard(
               title: 'Mesures personnalisées',
@@ -453,8 +528,103 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
-class _PhotoGallery extends StatefulWidget {
-  const _PhotoGallery({required this.photos, required this.modelCount});
+class _DeliveryInfo extends StatelessWidget {
+  const _DeliveryInfo({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = deliveryStatus(date);
+    final background = switch (status) {
+      DeliveryStatus.late => const Color(0xFFFBE7E5),
+      DeliveryStatus.today => const Color(0xFFFBEBDD),
+      DeliveryStatus.soon => const Color(0xFFFBF1E4),
+      DeliveryStatus.upcoming => const Color(0xFFF6F0EA),
+    };
+    final foreground = switch (status) {
+      DeliveryStatus.late => const Color(0xFFB3261E),
+      DeliveryStatus.today => const Color(0xFF9C5227),
+      DeliveryStatus.soon => const Color(0xFF8C6239),
+      DeliveryStatus.upcoming => const Color(0xFF7A5C4C),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: foreground.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              Icons.event_available_outlined,
+              color: foreground,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Livraison prévue',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: foreground.withValues(alpha: 0.8),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  formatFullDate(date),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: foreground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.schedule, size: 12, color: foreground),
+                const SizedBox(width: 4),
+                Text(
+                  formatDeliveryCountdown(date),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: foreground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotoGallery extends StatefulWidget {  const _PhotoGallery({required this.photos, required this.modelCount});
 
   final List<String> photos;
   final int modelCount;

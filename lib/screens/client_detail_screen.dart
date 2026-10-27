@@ -356,6 +356,56 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 }
 
+class _PatternPill extends StatelessWidget {
+  const _PatternPill({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F1FA),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE9DDF0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.architecture,
+            size: 11,
+            color: Color(0xFF7A5C8C),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            name,
+            style: const TextStyle(
+              color: Color(0xFF7A5C8C),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _deliveryColor(DateTime date) {
+  switch (deliveryStatus(date)) {
+    case DeliveryStatus.late:
+      return const Color(0xFFB3261E);
+    case DeliveryStatus.today:
+      return const Color(0xFF9C5227);
+    case DeliveryStatus.soon:
+      return const Color(0xFF8C6239);
+    case DeliveryStatus.upcoming:
+      return const Color(0xFF9A8A8F);
+  }
+}
+
 class _Stat extends StatelessWidget {
   const _Stat({required this.value, required this.label});
 
@@ -449,7 +499,14 @@ class _SheetCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    GarmentChip(type: sheet.garmentType, compact: true),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        GarmentChip(type: sheet.garmentType, compact: true),
+                        _PatternPill(name: sheet.pattern.name),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       '${sheet.measuredCount} '
@@ -469,6 +526,33 @@ class _SheetCard extends StatelessWidget {
                         color: Color(0xFFB7A39B),
                       ),
                     ),
+                    if (sheet.deliveryDate != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.event_available_outlined,
+                            size: 12.5,
+                            color: _deliveryColor(sheet.deliveryDate!),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Livraison '
+                              '${formatShortDate(sheet.deliveryDate!)} · '
+                              '${formatDeliveryCountdown(sheet.deliveryDate!)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: _deliveryColor(sheet.deliveryDate!),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import '../utils/formatters.dart';
 import 'measurement.dart';
+import 'pattern.dart';
 
 /// Une mesure libre ajoutée par le tailleur (« Tour de tête », etc.).
 class CustomMeasurement {
@@ -19,13 +21,16 @@ class CustomMeasurement {
   }
 }
 
-/// Une fiche de mesure : le vêtement demandé, les mesures et les photos.
+/// Une fiche de mesure : le vêtement demandé, le patron, les mesures,
+/// la date de livraison et les photos.
 class MeasurementSheet {
   const MeasurementSheet({
     required this.id,
     required this.clientId,
     required this.title,
     required this.garmentType,
+    this.patternId,
+    this.deliveryDate,
     this.measurements = const {},
     this.customMeasurements = const [],
     this.fabricPhotos = const [],
@@ -39,6 +44,12 @@ class MeasurementSheet {
   final String clientId;
   final String title;
   final String garmentType;
+
+  /// Patron choisi dans le catalogue (null pour les anciennes fiches).
+  final String? patternId;
+
+  /// Date de livraison promise au client, sans heure (null si non définie).
+  final DateTime? deliveryDate;
 
   /// Mesures standard : identifiant du champ → valeur en centimètres.
   final Map<String, double> measurements;
@@ -62,9 +73,25 @@ class MeasurementSheet {
   /// Vrai si la fiche contient déjà quelque chose d'utile.
   bool get hasContent => measuredCount > 0 || photoCount > 0;
 
+  /// Patron de la fiche, avec repli sur le type de vêtement.
+  SewingPattern get pattern =>
+      resolvePattern(patternId: patternId, garmentType: garmentType);
+
+  bool get hasDeliveryDate => deliveryDate != null;
+
+  /// Nombre de jours avant la livraison (0 = aujourd'hui, négatif = retard).
+  int? daysUntilDelivery({DateTime? now}) {
+    final date = deliveryDate;
+    if (date == null) return null;
+    return daysUntil(date, now: now);
+  }
+
   MeasurementSheet copyWith({
     String? title,
     String? garmentType,
+    String? patternId,
+    DateTime? deliveryDate,
+    bool clearDeliveryDate = false,
     Map<String, double>? measurements,
     List<CustomMeasurement>? customMeasurements,
     List<String>? fabricPhotos,
@@ -77,6 +104,10 @@ class MeasurementSheet {
       clientId: clientId,
       title: title ?? this.title,
       garmentType: garmentType ?? this.garmentType,
+      patternId: patternId ?? this.patternId,
+      deliveryDate: clearDeliveryDate
+          ? null
+          : (deliveryDate ?? this.deliveryDate),
       measurements: measurements ?? this.measurements,
       customMeasurements: customMeasurements ?? this.customMeasurements,
       fabricPhotos: fabricPhotos ?? this.fabricPhotos,
@@ -111,11 +142,17 @@ class MeasurementSheet {
         .whereType<String>()
         .toList();
 
+    final delivery = map['delivery_date'] as int?;
+
     return MeasurementSheet(
       id: map['id']! as String,
       clientId: map['client_id']! as String,
       title: map['title']! as String,
       garmentType: (map['garment_type'] as String?) ?? kGarmentTypes.last,
+      patternId: map['pattern_id'] as String?,
+      deliveryDate: delivery == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(delivery),
       measurements: measurements,
       customMeasurements: custom,
       fabricPhotos: fabric,
@@ -132,6 +169,8 @@ class MeasurementSheet {
       'client_id': clientId,
       'title': title,
       'garment_type': garmentType,
+      'pattern_id': patternId,
+      'delivery_date': deliveryDate?.millisecondsSinceEpoch,
       'measurements': jsonEncode(measurements),
       'custom_measurements': jsonEncode(
         customMeasurements.map((m) => m.toJson()).toList(),
@@ -144,6 +183,12 @@ class MeasurementSheet {
     };
   }
 
+  /// Mesures enregistrées qui ne font plus partie du formulaire principal.
+  Map<String, double> get legacyMeasurements => {
+    for (final entry in measurements.entries)
+      if (!kFormMeasurementIds.contains(entry.key)) entry.key: entry.value,
+  };
+
   /// Vrai si au moins une mesure de ce groupe a été renseignée.
   bool hasMeasurementsIn(MeasurementGroup group) =>
       group.fields.any((field) => measurements.containsKey(field.id));
@@ -153,7 +198,17 @@ class MeasurementSheet {
     final buffer = StringBuffer()
       ..writeln('FICHE DE MESURE — $clientName')
       ..writeln(title)
-      ..writeln();
+      ..writeln()
+      ..writeln('PATRON — ${pattern.name}');
+
+    final date = deliveryDate;
+    if (date != null) {
+      buffer.writeln(
+        'LIVRAISON — ${formatFullDate(date)} '
+        '(${formatDeliveryCountdown(date)})',
+      );
+    }
+    buffer.writeln();
 
     for (final group in kMeasurementGroups) {
       final lines = <String>[];
@@ -171,9 +226,25 @@ class MeasurementSheet {
       }
     }
 
-    if (customMeasurements.isNotEmpty) {
+    final legacy = legacyMeasurements;
+    if (legacy.isNotEmpty) {
       buffer
         ..writeln('AUTRES MESURES')
+        ..writeln(
+          legacy.entries
+              .map(
+                (entry) =>
+                    '• ${measurementLabel(entry.key)} : '
+                    '${formatMeasure(entry.value)} cm',
+              )
+              .join('\n'),
+        )
+        ..writeln();
+    }
+
+    if (customMeasurements.isNotEmpty) {
+      buffer
+        ..writeln('MESURES LIBRES')
         ..writeln(
           customMeasurements
               .map((m) => '• ${m.label} : ${formatMeasure(m.value)} cm')

@@ -148,6 +148,35 @@ abstract final class AppTheme {
         backgroundColor: cream,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: brand.withValues(alpha: 0.12),
+        elevation: 0,
+        height: 66,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 11.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? brand : const Color(0xFF8A767D),
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 22,
+            color: selected ? brand : const Color(0xFF9A8A8F),
+          );
+        }),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: cream,
+        headerBackgroundColor: brand,
+        headerForegroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
     );
   }
 }
