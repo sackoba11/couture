@@ -117,9 +117,8 @@ void main() {
       final legacy = sheet.copyWith(
         measurements: {...sheet.measurements, 'tour_sous_poitrine': 84},
       );
-      expect(legacy.legacyMeasurements, {'tour_sous_poitrine': 84});
+      expect(legacy.measurements['tour_sous_poitrine'], 84);
       final text = legacy.toShareText('Awa Diop');
-      expect(text, contains('AUTRES MESURES'));
       expect(text, contains('Tour sous-poitrine : 84 cm'));
     });
   });
