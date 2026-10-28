@@ -116,7 +116,30 @@ class AppDatabase {
               'CREATE INDEX idx_sheets_delivery ON sheets (delivery_date)',
             );
           }
-          // oldVersion < 3: la table patterns est déjà créée dans onCreate
+          if (oldVersion < 3) {
+            // Créer la table patterns pour les bases existantes (v2 → v3)
+            await db.execute('''\
+              CREATE TABLE IF NOT EXISTS patterns (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                tagline TEXT,
+                description TEXT,
+                garment_type TEXT NOT NULL,
+                silhouette TEXT,
+                key_measurements TEXT NOT NULL DEFAULT '[]',
+                fabric TEXT,
+                tip TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+              )
+            ''');
+          }
+          if (oldVersion < 4) {
+            // Ajouter la colonne is_default si elle manque (v3 → v4)
+            await db.execute(
+              'ALTER TABLE patterns ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0',
+            );
+          }
         },
       ),
     );

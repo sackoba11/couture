@@ -49,16 +49,6 @@ class _PatternsScreenState extends State<PatternsScreen> {
   }
 
   Future<void> _editPattern(SewingPattern pattern) async {
-    if (pattern.isDefault) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les patrons par défaut ne peuvent pas être modifiés'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
     final updated = await Navigator.of(context).push<SewingPattern>(
       PageRouteBuilder<SewingPattern>(
         pageBuilder: (context, animation, secondaryAnimation) =>
