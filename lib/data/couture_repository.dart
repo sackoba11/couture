@@ -83,7 +83,17 @@ class CoutureRepository {
   }
 
   /// Supprimer un patron de la base de données (seulement les patrons personnalisés).
+  /// Lève une exception si le patron est utilisé par au moins une fiche.
   Future<void> deletePattern(String patternId) async {
+    // Vérifier si le patron est utilisé par des fiches
+    final used = await isPatternUsed(patternId);
+    if (used) {
+      throw Exception(
+        'Ce patron est utilisé par au moins une fiche. '
+        'Supprimez d\'abord les fiches liées.',
+      );
+    }
+
     // Ne pas supprimer les patrons par défaut
     final defaultIds = kDefaultMalianPatterns.map((p) => p.id).toList();
     if (defaultIds.contains(patternId)) return;
@@ -96,6 +106,19 @@ class CoutureRepository {
     );
     // Invalider le cache
     _patternsById = null;
+  }
+
+  /// Vérifie si un patron est utilisé par au moins une fiche.
+  Future<bool> isPatternUsed(String patternId) async {
+    final db = await _db;
+    final rows = await db.query(
+      'sheets',
+      columns: ['id'],
+      where: 'pattern_id = ?',
+      whereArgs: [patternId],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
   }
 
   /// Obtenir tous les patrons (patrons par défaut + utilisateur créé).

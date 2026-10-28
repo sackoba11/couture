@@ -92,8 +92,20 @@ class _PatternsScreenState extends State<PatternsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await _repository.deletePattern(pattern.id);
-      _reload();
+      try {
+        await _repository.deletePattern(pattern.id);
+        _reload();
+      } on Exception catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
     }
   }
 

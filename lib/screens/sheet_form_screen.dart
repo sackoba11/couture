@@ -528,7 +528,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
       }
       if (!mounted) return;
       _saved = true;
-      Navigator.of(context).pop(sheet.id);
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
       setState(() => _saving = false);
