@@ -350,6 +350,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _createSheet,
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle fiche'),

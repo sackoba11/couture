@@ -169,6 +169,7 @@ class _PatternsScreenState extends State<PatternsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _addPattern,
         icon: const Icon(Icons.add_circle_outline),
         label: const Text('Nouveau patron'),

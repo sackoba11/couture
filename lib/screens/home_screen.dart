@@ -269,6 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _createSheet,
         icon: const Icon(Icons.straighten),
         label: const Text('Nouvelle fiche'),
