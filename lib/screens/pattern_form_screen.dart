@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../data/couture_repository.dart';
@@ -72,10 +74,12 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
 
     setState(() => _saving = true);
 
+    SewingPattern? pattern;
     try {
-      final pattern = SewingPattern(
-        id: widget.pattern?.id ??
-            'patron_${DateTime.now().millisecondsSinceEpoch}',
+      pattern = SewingPattern(
+        id:
+            widget.pattern?.id ??
+            'patron_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(100000)}',
         name: _nameController.text.trim(),
         tagline: _taglineController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -98,6 +102,12 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
+      // Si le patron existe déjà (conflit d'ID), considérer comme succès
+      if (e.toString().contains('UNIQUE constraint failed')) {
+        if (!mounted) return;
+        Navigator.of(context).pop(pattern);
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur : $e'),
@@ -115,6 +125,31 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
         _selectedMeasurements.add(id);
       }
     });
+  }
+
+  PatternSilhouette _silhouetteForGarment(String garmentType) {
+    switch (garmentType) {
+      case 'Boubou':
+        return PatternSilhouette.grandBoubou;
+      case 'Taille basse':
+        return PatternSilhouette.tailleBasse;
+      case 'Kaftan':
+        return PatternSilhouette.kaftan;
+      case 'Ensemble':
+        return PatternSilhouette.ensemble;
+      case 'Robe':
+        return PatternSilhouette.robe;
+      case 'Jupe':
+        return PatternSilhouette.jupe;
+      case 'Chemise':
+        return PatternSilhouette.chemise;
+      case 'Pantalon':
+        return PatternSilhouette.pantalon;
+      case 'Costume':
+        return PatternSilhouette.costume;
+      default:
+        return PatternSilhouette.grandBoubou;
+    }
   }
 
   @override
@@ -169,14 +204,14 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
                       prefixIcon: Icon(Icons.category_outlined, size: 20),
                     ),
                     items: kGarmentTypes.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type),
-                      );
+                      return DropdownMenuItem(value: type, child: Text(type));
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        setState(() => _garmentType = value);
+                        setState(() {
+                          _garmentType = value;
+                          _silhouette = _silhouetteForGarment(value);
+                        });
                       }
                     },
                   ),
@@ -214,59 +249,53 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
                 children: [
                   const Text(
                     'Sélectionnez les mesures à afficher pour ce patron.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: Color(0xFF9A8A8F),
-                    ),
+                    style: TextStyle(fontSize: 12.5, color: Color(0xFF9A8A8F)),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final group in kMeasurementGroups)
-                        ...[
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              group.title,
-                              style: const TextStyle(
+                      for (final group in kMeasurementGroups) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            group.title,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF7B2D42),
+                            ),
+                          ),
+                        ),
+                        ...group.fields.map(
+                          (field) => FilterChip(
+                            label: Text(
+                              field.label,
+                              style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF7B2D42),
+                                color: _selectedMeasurements.contains(field.id)
+                                    ? Colors.white
+                                    : const Color(0xFF6E5C62),
                               ),
                             ),
-                          ),
-                          ...group.fields.map(
-                            (field) => FilterChip(
-                              label: Text(
-                                field.label,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: _selectedMeasurements
-                                          .contains(field.id)
-                                      ? Colors.white
-                                      : const Color(0xFF6E5C62),
-                                ),
-                              ),
-                              selected: _selectedMeasurements.contains(
-                                field.id,
-                              ),
-                              onSelected: (_) => _toggleMeasurement(field.id),
-                              backgroundColor: const Color(0xFFFBF7F4),
-                              selectedColor:
-                                  Theme.of(context).colorScheme.primary,
-                              checkmarkColor: Colors.white,
-                              labelPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              padding: EdgeInsets.zero,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                            selected: _selectedMeasurements.contains(field.id),
+                            onSelected: (_) => _toggleMeasurement(field.id),
+                            backgroundColor: const Color(0xFFFBF7F4),
+                            selectedColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            checkmarkColor: Colors.white,
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
                             ),
+                            padding: EdgeInsets.zero,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
-                        ],
+                        ),
+                      ],
                     ],
                   ),
                   if (_selectedMeasurements.isEmpty)
@@ -311,12 +340,6 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
                       'Ex. Prévoyez 8 à 12 cm d\'aisance sur le tour de poitrine.',
                   prefixIcon: Icon(Icons.tips_and_updates_outlined, size: 20),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Entrez un conseil de coupe';
-                  }
-                  return null;
-                },
               ),
             ),
             const SizedBox(height: 14),
@@ -351,9 +374,7 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
                   ),
                 )
               : const Icon(Icons.save),
-          label: Text(
-            _saving ? 'Enregistrement…' : 'Enregistrer le patron',
-          ),
+          label: Text(_saving ? 'Enregistrement…' : 'Enregistrer le patron'),
         ),
       ),
     );

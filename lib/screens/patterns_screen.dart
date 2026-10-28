@@ -43,7 +43,6 @@ class _PatternsScreenState extends State<PatternsScreen> {
       ),
     );
     if (pattern != null && mounted) {
-      await _repository.savePattern(pattern);
       _reload();
     }
   }
@@ -60,7 +59,6 @@ class _PatternsScreenState extends State<PatternsScreen> {
       ),
     );
     if (updated != null && mounted) {
-      await _repository.updatePattern(updated);
       _reload();
     }
   }
