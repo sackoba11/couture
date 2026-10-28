@@ -37,7 +37,7 @@ class SheetSummaryScreen extends StatefulWidget {
 
 class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
   final CoutureRepository _repository = CoutureRepository.instance;
-  late Future<_SummaryData?> _data = _load();
+  _SummaryData? _data;
 
   Future<_SummaryData?> _load() async {
     final sheet = await _repository.sheet(widget.sheetId);
@@ -46,8 +46,15 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
     return _SummaryData(sheet: sheet, client: client);
   }
 
-  void _reload() {
-    setState(() => _data = _load());
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final data = await _load();
+    if (mounted) setState(() => _data = data);
   }
 
   Future<void> _edit(MeasurementSheet sheet, Client client) async {
@@ -103,115 +110,98 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_SummaryData?>(
-      future: _data,
-      builder: (context, snapshot) {
-        final data = snapshot.data;
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Résumé de la fiche'),
-            actions: [
-              if (data != null)
-                PopupMenuButton<String>(
-                  tooltip: 'Options',
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'copy':
-                        _copy(data.sheet, data.client?.fullName ?? 'Client');
-                      case 'edit':
-                        if (data.client != null) {
-                          _edit(data.sheet, data.client!);
-                        }
-                      case 'delete':
-                        _delete(data.sheet);
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'copy',
-                      child: Row(
-                        children: [
-                          Icon(Icons.copy_all_outlined, size: 20),
-                          SizedBox(width: 12),
-                          Text('Copier le résumé'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, size: 20),
-                          SizedBox(width: 12),
-                          Text('Modifier la fiche'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, size: 20),
-                          SizedBox(width: 12),
-                          Text('Supprimer la fiche'),
-                        ],
-                      ),
-                    ),
+    if (_data == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final data = _data!;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Résumé de la fiche'),
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Options',
+            onSelected: (value) {
+              switch (value) {
+                case 'copy':
+                  _copy(data.sheet, data.client?.fullName ?? 'Client');
+                case 'edit':
+                  if (data.client != null) {
+                    _edit(data.sheet, data.client!);
+                  }
+                case 'delete':
+                  _delete(data.sheet);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'copy',
+                child: Row(
+                  children: [
+                    Icon(Icons.copy_all_outlined, size: 20),
+                    SizedBox(width: 12),
+                    Text('Copier le résumé'),
                   ],
                 ),
+              ),
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, size: 20),
+                    SizedBox(width: 12),
+                    Text('Modifier la fiche'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 20),
+                    SizedBox(width: 12),
+                    Text('Supprimer la fiche'),
+                  ],
+                ),
+              ),
             ],
           ),
-          body: _buildBody(snapshot, data),
-          bottomNavigationBar: data == null
-              ? null
-              : SafeArea(
-                  minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Row(
-                    children: [
-                      OutlinedButton(
-                        onPressed: () => _copy(
-                          data.sheet,
-                          data.client?.fullName ?? 'Client',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(56, 52),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        child: const Icon(Icons.copy_all_outlined, size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: data.client == null
-                              ? null
-                              : () => _edit(data.sheet, data.client!),
-                          icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: const Text('Modifier la fiche'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-        );
-      },
+        ],
+      ),
+      body: _buildBody(data),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Row(
+          children: [
+            OutlinedButton(
+              onPressed: () => _copy(
+                data.sheet,
+                data.client?.fullName ?? 'Client',
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(56, 52),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              child: const Icon(Icons.copy_all_outlined, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: data.client == null
+                    ? null
+                    : () => _edit(data.sheet, data.client!),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Modifier la fiche'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<_SummaryData?> snapshot, _SummaryData? data) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (snapshot.hasError) {
-      return EmptyState(
-        icon: Icons.error_outline,
-        title: 'Chargement impossible',
-        message: '${snapshot.error}',
-        action: OutlinedButton(
-          onPressed: _reload,
-          child: const Text('Réessayer'),
-        ),
-      );
-    }
+  Widget _buildBody(_SummaryData? data) {
     if (data == null) {
       return EmptyState(
         icon: Icons.search_off,
@@ -493,8 +483,6 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
   }
 }
 
-// ---------------------------------------------------------------- Widgets
-
 class _InfoPill extends StatelessWidget {
   const _InfoPill({required this.icon, required this.label});
 
@@ -624,7 +612,8 @@ class _DeliveryInfo extends StatelessWidget {
   }
 }
 
-class _PhotoGallery extends StatefulWidget {  const _PhotoGallery({required this.photos, required this.modelCount});
+class _PhotoGallery extends StatefulWidget {
+  const _PhotoGallery({required this.photos, required this.modelCount});
 
   final List<String> photos;
   final int modelCount;
