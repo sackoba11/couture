@@ -58,12 +58,12 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
   }
 
   Future<void> _edit(MeasurementSheet sheet, Client client) async {
-    final saved = await Navigator.of(context).push<bool>(
+    final saved = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => SheetFormScreen(client: client, sheet: sheet),
       ),
     );
-    if (!mounted || saved != true) return;
+    if (!mounted || saved == null) return;
     _reload();
   }
 
