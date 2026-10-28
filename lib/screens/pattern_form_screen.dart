@@ -84,7 +84,7 @@ class _PatternFormScreenState extends State<PatternFormScreen> {
         keyMeasurements: _selectedMeasurements.toList(),
         fabric: _fabricController.text.trim(),
         tip: _tipController.text.trim(),
-        isDefault: false,
+        isDefault: widget.pattern?.isDefault ?? false,
       );
 
       if (_isEditing) {

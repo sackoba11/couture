@@ -74,8 +74,13 @@ class MeasurementSheet {
   bool get hasContent => measuredCount > 0 || photoCount > 0;
 
   /// Patron de la fiche, avec repli sur le type de vêtement.
+  /// Utilise les patrons chargés depuis la base de données.
   SewingPattern get pattern =>
-      resolvePatternSimple(patternId: patternId, garmentType: garmentType);
+      resolvePatternIn(
+        patternId: patternId,
+        garmentType: garmentType,
+        patterns: currentPatterns,
+      );
 
   bool get hasDeliveryDate => deliveryDate != null;
 

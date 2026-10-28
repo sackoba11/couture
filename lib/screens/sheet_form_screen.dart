@@ -55,6 +55,12 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   late List<String> _fabricPhotos;
   late List<String> _modelPhotos;
 
+  /// Patrons chargés depuis la base de données (défauts + personnalisés).
+  Map<String, SewingPattern> _patterns = {};
+
+  /// Vrai si les patrons ont été chargés depuis la DB.
+  bool _patternsLoaded = false;
+
   /// Mesures conservées telles quelles : elles ne figurent plus dans le
   /// formulaire (ancienne version) mais ne doivent jamais être perdues.
   late final Map<String, double> _extraMeasurements;
@@ -72,7 +78,11 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   bool get _isEditing => widget.sheet != null;
 
   SewingPattern get _pattern =>
-      patternByIdSimple(_patternId) ?? patternForGarmentSimple(_garmentType);
+      resolvePatternIn(
+        patternId: _patternId,
+        garmentType: _garmentType,
+        patterns: _patterns,
+      );
 
   /// Mesures visibles : celles du patron, plus toute mesure déjà saisie
   /// (pour ne jamais masquer une valeur existante).
@@ -129,88 +139,90 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                   ),
                 ),
                 Expanded(
-                  child: ListView.separated(
-                    controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: kMalianPatterns.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final pattern = kMalianPatterns[index];
-                      final selected = pattern.id == _patternId;
-                      return Material(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () => Navigator.pop(context, pattern),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
+                  child: _patternsLoaded
+                      ? ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          itemCount: _patterns.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final pattern = _patterns.values.elementAt(index);
+                            final selected = pattern.id == _patternId;
+                            return Material(
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: selected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : const Color(0xFFEFE3DC),
-                                width: selected ? 1.6 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 48,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () => Navigator.pop(context, pattern),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFBF1EB),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: selected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : const Color(0xFFEFE3DC),
+                                      width: selected ? 1.6 : 1,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    pattern.icon,
-                                    color: const Color(0xFF9A6A52),
-                                    size: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        pattern.name,
-                                        style: const TextStyle(
-                                          fontSize: 14.5,
-                                          fontWeight: FontWeight.w700,
+                                      Container(
+                                        width: 44,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFBF1EB),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(
+                                          pattern.icon,
+                                          color: const Color(0xFF9A6A52),
+                                          size: 22,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        pattern.tagline,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          height: 1.3,
-                                          color: Color(0xFF8A767D),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              pattern.name,
+                                              style: const TextStyle(
+                                                fontSize: 14.5,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              pattern.tagline,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                height: 1.3,
+                                                color: Color(0xFF8A767D),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
+                                      if (selected)
+                                        Icon(
+                                          Icons.check_circle,
+                                          size: 20,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
                                     ],
                                   ),
                                 ),
-                                if (selected)
-                                  Icon(
-                                    Icons.check_circle,
-                                    size: 20,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                              ),
+                            );
+                          },
+                        )
+                      : const Center(child: CircularProgressIndicator()),
                 ),
               ],
             );
@@ -252,7 +264,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   void _selectGarment(String type) {
     setState(() {
       _garmentType = type;
-      _patternId = patternForGarmentSimple(type).id;
+      _patternId = patternForGarmentIn(type, _patterns).id;
     });
   }
 
@@ -272,7 +284,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
     _patternId =
         sheet?.patternId ??
         widget.initialPattern?.id ??
-        patternForGarmentSimple(_garmentType).id;
+        kGarmentTypes.first;
     _deliveryDate = sheet?.deliveryDate;
     _fabricPhotos = [...?sheet?.fabricPhotos];
     _modelPhotos = [...?sheet?.modelPhotos];
@@ -298,6 +310,23 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
         ),
       );
     }
+
+    // Charger les patrons depuis la base de données
+    _loadPatterns();
+  }
+
+  /// Charge les patrons depuis la base de données.
+  Future<void> _loadPatterns() async {
+    final patterns = await _repository.getAllPatterns();
+    if (!mounted) return;
+    setState(() {
+      _patterns = patterns;
+      _patternsLoaded = true;
+      // Si aucun patternId n'est défini (nouvelle fiche), choisir le défaut
+      if (widget.sheet == null && widget.initialPattern == null) {
+        _patternId = patternForGarmentIn(_garmentType, patterns).id;
+      }
+    });
   }
 
   @override

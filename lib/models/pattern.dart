@@ -402,6 +402,18 @@ final Map<String, SewingPattern> kPatternsById = {};
 /// Alias pour compatibilité avec l'ancien code — identique à kDefaultMalianPatterns.
 const List<SewingPattern> kMalianPatterns = kDefaultMalianPatterns;
 
+/// Patrons actuellement chargés (défauts + personnalisés depuis la DB).
+/// Défini par le repository après chargement depuis la base de données.
+Map<String, SewingPattern> _currentPatterns = {};
+
+/// Définir les patrons actuels (appelé par le repository après chargement).
+void setCurrentPatterns(Map<String, SewingPattern> patterns) {
+  _currentPatterns = patterns;
+}
+
+/// Obtenir les patrons actuellement chargés.
+Map<String, SewingPattern> get currentPatterns => _currentPatterns;
+
 /// Charger les patrons depuis la base de données et fusionner avec les par défauts.
 /// Cette méthode sera appelée depuis le repository au démarrage.
 Future<Map<String, SewingPattern>> loadPatternsFromDatabase() async {
@@ -409,35 +421,38 @@ Future<Map<String, SewingPattern>> loadPatternsFromDatabase() async {
   return {};
 }
 
-/// Patron correspondant à un identifiant (utilise d'abord kPatternsById, puis kDefaultMalianPatterns).
-SewingPattern? patternByIdSimple(String? id) {
+/// Patron correspondant à un identifiant (utilise la map fournie, puis les défauts).
+SewingPattern? patternByIdIn(String? id, Map<String, SewingPattern> patterns) {
   if (id == null) return null;
-  return kPatternsById[id] ??
-      kDefaultMalianPatterns.firstWhere(
-        (p) => p.id == id,
-        orElse: () => kDefaultMalianPatterns.first,
-      );
+  final fromPatterns = patterns[id];
+  if (fromPatterns != null) return fromPatterns;
+  try {
+    return kDefaultMalianPatterns.firstWhere((p) => p.id == id);
+  } on StateError {
+    return null;
+  }
 }
 
-/// Patron par défaut pour un type de vêtement (utilise d'abord kPatternsById, puis kDefaultMalianPatterns).
-SewingPattern patternForGarmentSimple(String garmentType) {
-  final custom = kPatternsById.values.firstWhere(
+/// Patron par défaut pour un type de vêtement (utilise la map fournie, puis les défauts).
+SewingPattern patternForGarmentIn(String garmentType, Map<String, SewingPattern> patterns) {
+  // D'abord un patron personnalisé (non par défaut) de ce type
+  final custom = patterns.values.firstWhere(
     (p) => p.garmentType == garmentType && !p.isDefault,
-    orElse: () => kDefaultMalianPatterns.firstWhere(
-      (p) => p.garmentType == garmentType,
-      orElse: () => kDefaultMalianPatterns.first,
+    orElse: () => patterns.values.firstWhere(
+      (p) => p.garmentType == garmentType && p.isDefault,
+      orElse: () => kDefaultMalianPatterns.firstWhere(
+        (p) => p.garmentType == garmentType,
+        orElse: () => kDefaultMalianPatterns.first,
+      ),
     ),
   );
-  if (!custom.isDefault) return custom;
-  return kDefaultMalianPatterns.firstWhere(
-    (p) => p.garmentType == garmentType,
-    orElse: () => kDefaultMalianPatterns.first,
-  );
+  return custom;
 }
 
 /// Patron enregistré sur la fiche, avec repli sur le type de vêtement.
-SewingPattern resolvePatternSimple({String? patternId, required String garmentType}) {
-  return patternByIdSimple(patternId) ?? patternForGarmentSimple(garmentType);
+/// Utilise une map de patrons (ex. chargée depuis la DB).
+SewingPattern resolvePatternIn({String? patternId, required String garmentType, required Map<String, SewingPattern> patterns}) {
+  return patternByIdIn(patternId, patterns) ?? patternForGarmentIn(garmentType, patterns);
 }
 
 /// Patron correspondant à un identifiant, en cherchant dans la map fournie.

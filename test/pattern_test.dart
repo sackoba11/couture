@@ -30,25 +30,34 @@ void main() {
     });
 
     test('le patron enregistré prime sur le type de vêtement', () {
-      final pattern = resolvePatternSimple(
+      final patternsMap = {for (final p in kMalianPatterns) p.id: p};
+      final pattern = resolvePatternIn(
         patternId: 'kaftan',
         garmentType: 'Jupe',
+        patterns: patternsMap,
       );
       expect(pattern.name, 'Kaftan');
       expect(pattern.garmentType, 'Robe');
     });
 
     test('repli sur le patron habituel du type de vêtement', () {
-      expect(patternForGarmentSimple('Boubou').name, 'Grand boubou');
-      expect(patternForGarmentSimple('Jupe').name, 'Jupe longue');
-      expect(patternForGarmentSimple('Inconnu').name, 'Grand boubou');
-      expect(resolvePatternSimple(garmentType: 'Pantalon').name,
+      final patternsMap = {for (final p in kMalianPatterns) p.id: p};
+      expect(patternForGarmentIn('Boubou', patternsMap).name, 'Grand boubou');
+      expect(patternForGarmentIn('Jupe', patternsMap).name, 'Jupe longue');
+      expect(patternForGarmentIn('Inconnu', patternsMap).name, 'Grand boubou');
+      expect(
+          resolvePatternIn(
+            garmentType: 'Pantalon',
+            patterns: patternsMap,
+          )
+          .name,
           'Pantalon / Sarouel');
     });
 
     test('liste les mesures manquantes', () {
+      final patternsMap = {for (final p in kMalianPatterns) p.id: p};
       final missing = missingMeasurements(
-        kPatternsById['jupe_longue'] ??
+        patternsMap['jupe_longue'] ??
             kDefaultMalianPatterns.firstWhere(
               (p) => p.id == 'jupe_longue',
             ),

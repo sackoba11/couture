@@ -39,6 +39,7 @@ class CoutureRepository {
     final db = await _db;
     final loaded = await _loadPatternsFromDb(db);
     _patternsById = loaded;
+    setCurrentPatterns(loaded);
     return loaded;
   }
 
