@@ -30,7 +30,7 @@ void main() {
     });
 
     test('le patron enregistré prime sur le type de vêtement', () {
-      final pattern = resolvePattern(
+      final pattern = resolvePatternSimple(
         patternId: 'kaftan',
         garmentType: 'Jupe',
       );
@@ -39,17 +39,24 @@ void main() {
     });
 
     test('repli sur le patron habituel du type de vêtement', () {
-      expect(patternForGarment('Boubou').name, 'Grand boubou');
-      expect(patternForGarment('Jupe').name, 'Jupe longue');
-      expect(patternForGarment('Inconnu').name, 'Grand boubou');
-      expect(resolvePattern(garmentType: 'Pantalon').name, 'Pantalon / Sarouel');
+      expect(patternForGarmentSimple('Boubou').name, 'Grand boubou');
+      expect(patternForGarmentSimple('Jupe').name, 'Jupe longue');
+      expect(patternForGarmentSimple('Inconnu').name, 'Grand boubou');
+      expect(resolvePatternSimple(garmentType: 'Pantalon').name,
+          'Pantalon / Sarouel');
     });
 
     test('liste les mesures manquantes', () {
-      final missing = missingMeasurements(kPatternsById['jupe_longue']!, {
-        'tour_taille': 76,
-        'tour_hanches': 98,
-      });
+      final missing = missingMeasurements(
+        kPatternsById['jupe_longue'] ??
+            kDefaultMalianPatterns.firstWhere(
+              (p) => p.id == 'jupe_longue',
+            ),
+        {
+          'tour_taille': 76,
+          'tour_hanches': 98,
+        },
+      );
       expect(missing, contains('longueur_jupe'));
       expect(missing, isNot(contains('tour_taille')));
     });

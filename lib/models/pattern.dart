@@ -13,8 +13,7 @@ enum PatternSilhouette {
   costume,
 }
 
-/// Un patron de couture courant au Mali, avec les mesures qui lui sont
-/// réellement nécessaires.
+/// Un patron de couture, tel qu'enregistré dans la base de données ou créé par le tailleur.
 class SewingPattern {
   const SewingPattern({
     required this.id,
@@ -26,17 +25,24 @@ class SewingPattern {
     required this.keyMeasurements,
     required this.fabric,
     required this.tip,
+    this.isDefault = false,
   });
 
+  /// Identifiant unique du patron (UUID ou 'grand_boubou', etc.).
   final String id;
+
+  /// Nom affiché dans les listes.
   final String name;
 
   /// Phrase courte affichée dans les listes.
   final String tagline;
+
+  /// Description détaillée de la coupe.
   final String description;
 
   /// Type de vêtement enregistré dans la fiche.
   final String garmentType;
+
   final PatternSilhouette silhouette;
 
   /// Mesures affichées en priorité quand ce patron est choisi.
@@ -47,6 +53,9 @@ class SewingPattern {
 
   /// Conseil de coupe ou de prise de mesure.
   final String tip;
+
+  /// Vrai si c'est l'un des patrons par défaut du Mali (pour distinguer des patrons personnalisés).
+  final bool isDefault;
 
   IconData get icon {
     switch (silhouette) {
@@ -70,10 +79,59 @@ class SewingPattern {
         return Icons.business_center_outlined;
     }
   }
+
+  /// Convertir de Map vers SewingPattern (depuis la base de données).
+  factory SewingPattern.fromMap(Map<String, dynamic> map) {
+    final keyMeasurements = (map['key_measurements'] as List?)
+        ?.map((item) => item as String)
+        .toList() ??
+        [];
+
+    return SewingPattern(
+      id: (map['id'] as String?) ?? '',
+      name: (map['name'] as String?) ?? '',
+      tagline: (map['tagline'] as String?) ?? '',
+      description: (map['description'] as String?) ?? '',
+      garmentType: (map['garment_type'] as String?) ?? '',
+      silhouette: _silhouetteFromString(map['silhouette'] as String?),
+      keyMeasurements: keyMeasurements,
+      fabric: (map['fabric'] as String?) ?? '',
+      tip: (map['tip'] as String?) ?? '',
+      isDefault: (map['is_default'] as int?) == 1,
+    );
+  }
+
+  /// Convertir de SewingPattern vers Map (pour la base de données).
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'tagline': tagline,
+      'description': description,
+      'garment_type': garmentType,
+      'silhouette': _silhouetteToString(),
+      'key_measurements': keyMeasurements,
+      'fabric': fabric,
+      'tip': tip,
+      'is_default': isDefault ? 1 : 0,
+    };
+  }
+
+  static PatternSilhouette _silhouetteFromString(String? s) {
+    if (s == null) return PatternSilhouette.grandBoubou;
+    return PatternSilhouette.values.firstWhere(
+      (e) => e.toString().split('.').last == s,
+      orElse: () => PatternSilhouette.grandBoubou,
+    );
+  }
+
+  String _silhouetteToString() {
+    return silhouette.toString().split('.').last;
+  }
 }
 
-/// Catalogue des patrons les plus demandés dans les ateliers maliens.
-const List<SewingPattern> kMalianPatterns = [
+/// Les patrons par défaut du Mali (toujours disponibles en lecture seule).
+const List<SewingPattern> kDefaultMalianPatterns = [
   SewingPattern(
     id: 'grand_boubou',
     name: 'Grand boubou',
@@ -102,6 +160,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Prévoyez 8 à 12 cm d\'aisance sur le tour de poitrine : le boubou '
         'doit flotter, pas coller.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'taille_basse',
@@ -128,6 +187,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Mesurez la taille basse 4 à 6 cm sous l\'os du bassin, là où la '
         'jupe reposera réellement.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'kaftan',
@@ -156,6 +216,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Pour un kaftan brodé, ajoutez 2 cm à l\'emmanchure afin que la '
         'broderie ne tire pas à l\'enfilage.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'ensemble_pagne',
@@ -183,6 +244,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Laissez 3 cm de marge en bas de la jupe : l\'ourlet se règle '
         'mieux une fois la pièce montée.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'robe_sirene',
@@ -212,6 +274,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Prenez la mesure de genou debout, jambes jointes : c\'est le point '
         'où la jupe commence à s\'évaser.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'chemise_bazin',
@@ -239,6 +302,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Ajoutez 1,5 cm au tour de cou pour que le col reste confortable '
         'fermé, surtout sur le bazin amidonné.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'jupe_longue',
@@ -261,6 +325,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Pour une jupe portefeuille, prévoyez 15 cm de recouvrement et '
         'mesurez l\'ouverture bas pour garder de la marche.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'pantalon_sarouel',
@@ -284,6 +349,7 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Mesurez l\'enfourchure assis, dos droit : c\'est la valeur qui '
         'évite un pantalon qui tire à l\'entrejambe.',
+    isDefault: true,
   ),
   SewingPattern(
     id: 'costume',
@@ -317,48 +383,117 @@ const List<SewingPattern> kMalianPatterns = [
     tip:
         'Prenez les mesures sur une chemise fine : une veste coupée sur '
         'un gros pull finit toujours trop large aux épaules.',
+    isDefault: true,
   ),
 ];
 
-/// Accès rapide par identifiant.
-final Map<String, SewingPattern> kPatternsById = {
-  for (final pattern in kMalianPatterns) pattern.id: pattern,
-};
+/// Accès rapide par identifiant, chargé depuis la DB + patrons par défaut.
+final Map<String, SewingPattern> kPatternsById = {};
 
-/// Patron correspondant à un identifiant, ou null s\'il n\'existe plus.
-SewingPattern? patternById(String? id) {
-  if (id == null) return null;
-  return kPatternsById[id];
+/// Alias pour compatibilité avec l'ancien code — identique à kDefaultMalianPatterns.
+const List<SewingPattern> kMalianPatterns = kDefaultMalianPatterns;
+
+/// Charger les patrons depuis la base de données et fusionner avec les par défauts.
+/// Cette méthode sera appelée depuis le repository au démarrage.
+Future<Map<String, SewingPattern>> loadPatternsFromDatabase() async {
+  // Retourne une map vide - le repository chargera depuis la DB
+  return {};
 }
 
-/// Patron par défaut pour un type de vêtement.
-SewingPattern patternForGarment(String garmentType) {
-  switch (garmentType) {
-    case 'Boubou':
-      return kPatternsById['grand_boubou']!;
-    case 'Robe':
-      return kPatternsById['robe_sirene']!;
-    case 'Ensemble':
-      return kPatternsById['ensemble_pagne']!;
-    case 'Chemise':
-      return kPatternsById['chemise_bazin']!;
-    case 'Pantalon':
-      return kPatternsById['pantalon_sarouel']!;
-    case 'Jupe':
-      return kPatternsById['jupe_longue']!;
-    case 'Costume':
-      return kPatternsById['costume']!;
-    default:
-      return kMalianPatterns.first;
-  }
+/// Patron correspondant à un identifiant (utilise d'abord kPatternsById, puis kDefaultMalianPatterns).
+SewingPattern? patternByIdSimple(String? id) {
+  if (id == null) return null;
+  return kPatternsById[id] ??
+      kDefaultMalianPatterns.firstWhere(
+        (p) => p.id == id,
+        orElse: () => kDefaultMalianPatterns.first,
+      );
+}
+
+/// Patron par défaut pour un type de vêtement (utilise d'abord kPatternsById, puis kDefaultMalianPatterns).
+SewingPattern patternForGarmentSimple(String garmentType) {
+  final custom = kPatternsById.values.firstWhere(
+    (p) => p.garmentType == garmentType && !p.isDefault,
+    orElse: () => kDefaultMalianPatterns.firstWhere(
+      (p) => p.garmentType == garmentType,
+      orElse: () => kDefaultMalianPatterns.first,
+    ),
+  );
+  if (!custom.isDefault) return custom;
+  return kDefaultMalianPatterns.firstWhere(
+    (p) => p.garmentType == garmentType,
+    orElse: () => kDefaultMalianPatterns.first,
+  );
 }
 
 /// Patron enregistré sur la fiche, avec repli sur le type de vêtement.
-SewingPattern resolvePattern({String? patternId, required String garmentType}) {
-  return patternById(patternId) ?? patternForGarment(garmentType);
+SewingPattern resolvePatternSimple({String? patternId, required String garmentType}) {
+  return patternByIdSimple(patternId) ?? patternForGarmentSimple(garmentType);
 }
 
-/// Valeurs d\'exemple pour dessiner un patron dans le catalogue.
+/// Patron correspondant à un identifiant, en cherchant dans la map fournie.
+SewingPattern? patternById(String? id, Map<String, SewingPattern> patterns) {
+  if (id == null) return null;
+  return patterns[id];
+}
+
+/// Patron par défaut pour un type de vêtement (utilise d'abord les patrons stockés,
+/// puis les patrons par défaut du Mali).
+SewingPattern patternForGarment(String garmentType, Map<String, SewingPattern> patterns) {
+  // Essayer d'abord dans les patrons chargés depuis la DB
+  final defaultPattern = patterns.values.firstWhere(
+    (p) => p.garmentType == garmentType && !p.isDefault,
+    orElse: () => kDefaultMalianPatterns.firstWhere(
+      (p) => p.garmentType == garmentType,
+      orElse: () => kDefaultMalianPatterns.first,
+    ),
+  );
+  
+  // Si ce n'est pas un patron par défaut, le retourner
+  if (!defaultPattern.isDefault) return defaultPattern;
+  
+  // Sinon, retourner le patron par défaut du Mali
+  return kDefaultMalianPatterns.firstWhere(
+    (p) => p.garmentType == garmentType,
+    orElse: () => kDefaultMalianPatterns.first,
+  );
+}
+
+/// Toutes les silhouettes possibles.
+String silhouetteToString(PatternSilhouette silhouette) {
+  return silhouette.toString().split('.').last;
+}
+
+/// Convertir une chaîne de caractères en silhouette.
+PatternSilhouette stringToSilhouette(String s) {
+  return PatternSilhouette.values.firstWhere(
+    (e) => e.toString().split('.').last == s,
+    orElse: () => PatternSilhouette.grandBoubou,
+  );
+}
+
+/// Patron enregistré sur la fiche, avec repli sur le type de vêtement.
+/// Les patterns stockés en base l'emporte sur les patrons par défaut.
+SewingPattern resolvePattern({String? patternId, required String garmentType, required Map<String, SewingPattern> patterns}) {
+  // Si un patternId est fourni, l'utiliser s'il existe dans la map
+  if (patternId != null && patterns.containsKey(patternId)) {
+    return patterns[patternId]!;
+  }
+  // Sinon, utiliser le patron par défaut du type de vêtement
+  return patternForGarment(garmentType, patterns);
+}
+
+/// Mesures du patron qui manquent sur une fiche.
+List<String> missingMeasurements(
+  SewingPattern pattern,
+  Map<String, double> measurements,
+) {
+  return pattern.keyMeasurements
+      .where((id) => !measurements.containsKey(id))
+      .toList();
+}
+
+/// Valeurs d'exemple pour dessiner un patron dans le catalogue.
 const Map<String, double> kPatternDemoMeasurements = {
   'tour_poitrine': 92,
   'tour_taille': 76,
@@ -390,13 +525,3 @@ const Map<String, double> kPatternDemoMeasurements = {
   'longueur_voile': 180,
   'ouverture_bas': 60,
 };
-
-/// Mesures du patron qui manquent sur une fiche.
-List<String> missingMeasurements(
-  SewingPattern pattern,
-  Map<String, double> measurements,
-) {
-  return pattern.keyMeasurements
-      .where((id) => !measurements.containsKey(id))
-      .toList();
-}

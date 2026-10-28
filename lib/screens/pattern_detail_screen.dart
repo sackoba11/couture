@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../data/couture_repository.dart';
 import '../models/measurement.dart';
 import '../models/pattern.dart';
 import '../widgets/client_picker.dart';
 import '../widgets/pattern_sketch.dart';
 import '../widgets/section_card.dart';
+import 'pattern_form_screen.dart';
 import 'sheet_form_screen.dart';
 import 'sheet_summary_screen.dart';
 
@@ -19,6 +21,15 @@ class PatternDetailScreen extends StatefulWidget {
 }
 
 class _PatternDetailScreenState extends State<PatternDetailScreen> {
+  final CoutureRepository _repository = CoutureRepository.instance;
+  late SewingPattern _pattern;
+
+  @override
+  void initState() {
+    super.initState();
+    _pattern = widget.pattern;
+  }
+
   Future<void> _createSheet() async {
     final client = await showClientPicker(context);
     if (client == null || !mounted) return;
@@ -27,7 +38,7 @@ class _PatternDetailScreenState extends State<PatternDetailScreen> {
       MaterialPageRoute(
         builder: (_) => SheetFormScreen(
           client: client,
-          initialPattern: widget.pattern,
+          initialPattern: _pattern,
         ),
       ),
     );
@@ -38,13 +49,75 @@ class _PatternDetailScreenState extends State<PatternDetailScreen> {
     );
   }
 
+  Future<void> _editPattern() async {
+    if (_pattern.isDefault) return;
+
+    final updated = await Navigator.of(context).push<SewingPattern>(
+      MaterialPageRoute(
+        builder: (_) => PatternFormScreen(pattern: _pattern),
+      ),
+    );
+    if (updated != null && mounted) {
+      setState(() => _pattern = updated);
+    }
+  }
+
+  Future<void> _deletePattern() async {
+    if (_pattern.isDefault) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le patron'),
+        content: Text(
+          'Voulez-vous vraiment supprimer le patron « ${_pattern.name} » ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _repository.deletePattern(_pattern.id);
+      if (mounted) Navigator.of(context).pop(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final pattern = widget.pattern;
+    final pattern = _pattern;
     final theme = Theme.of(context);
+    final isCustom = !pattern.isDefault;
 
     return Scaffold(
-      appBar: AppBar(title: Text(pattern.name)),
+      appBar: AppBar(
+        title: Text(pattern.name),
+        actions: [
+          if (isCustom) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: _editPattern,
+              tooltip: 'Modifier le patron',
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _deletePattern,
+              tooltip: 'Supprimer le patron',
+            ),
+          ],
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [

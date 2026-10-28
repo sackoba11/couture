@@ -75,7 +75,7 @@ class MeasurementSheet {
 
   /// Patron de la fiche, avec repli sur le type de vêtement.
   SewingPattern get pattern =>
-      resolvePattern(patternId: patternId, garmentType: garmentType);
+      resolvePatternSimple(patternId: patternId, garmentType: garmentType);
 
   bool get hasDeliveryDate => deliveryDate != null;
 

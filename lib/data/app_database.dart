@@ -10,6 +10,8 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
   static const int _version = 3;
 
+  static const String tablePatterns = 'patterns';
+
   Database? _database;
   Future<Database>? _opening;
   DatabaseFactory? _factoryOverride;

@@ -72,7 +72,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   bool get _isEditing => widget.sheet != null;
 
   SewingPattern get _pattern =>
-      patternById(_patternId) ?? patternForGarment(_garmentType);
+      patternByIdSimple(_patternId) ?? patternForGarmentSimple(_garmentType);
 
   /// Mesures visibles : celles du patron, plus toute mesure déjà saisie
   /// (pour ne jamais masquer une valeur existante).
@@ -252,7 +252,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   void _selectGarment(String type) {
     setState(() {
       _garmentType = type;
-      _patternId = patternForGarment(type).id;
+      _patternId = patternForGarmentSimple(type).id;
     });
   }
 
@@ -272,7 +272,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
     _patternId =
         sheet?.patternId ??
         widget.initialPattern?.id ??
-        patternForGarment(_garmentType).id;
+        patternForGarmentSimple(_garmentType).id;
     _deliveryDate = sheet?.deliveryDate;
     _fabricPhotos = [...?sheet?.fabricPhotos];
     _modelPhotos = [...?sheet?.modelPhotos];

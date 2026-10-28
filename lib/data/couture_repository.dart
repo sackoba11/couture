@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/client.dart';
 import '../models/measurement_sheet.dart';
+import '../models/pattern.dart';
 import '../utils/formatters.dart';
 import 'app_database.dart';
 import 'media_storage.dart';
@@ -28,6 +29,84 @@ class CoutureRepository {
   static final CoutureRepository instance = CoutureRepository._();
 
   Future<Database> get _db => AppDatabase.instance.database;
+
+  // Cache des patrons chargés depuis la DB (initialisé par ensurePatternsLoaded).
+  Map<String, SewingPattern>? _patternsById;
+
+  /// Futur qui charge les patrons depuis la DB au premier besoin.
+  Future<Map<String, SewingPattern>> ensurePatternsLoaded() async {
+    if (_patternsById != null) return _patternsById!;
+    final db = await _db;
+    final loaded = await _loadPatternsFromDb(db);
+    _patternsById = loaded;
+    return loaded;
+  }
+
+  Future<Map<String, SewingPattern>> _loadPatternsFromDb(Database db) async {
+    final rows = await db.query(AppDatabase.tablePatterns);
+    final Map<String, SewingPattern> patterns = {};
+    for (final row in rows) {
+      final pattern = SewingPattern.fromMap(row);
+      patterns[pattern.id] = pattern;
+    }
+    // Fusionner avec les patrons par défaut (DB l'emporte si conflit d'ID)
+    for (final defaultPattern in kDefaultMalianPatterns) {
+      if (!patterns.containsKey(defaultPattern.id)) {
+        patterns[defaultPattern.id] = defaultPattern;
+      }
+    }
+    return patterns;
+  }
+
+  /// Enregistrer un nouveau patron dans la base de données.
+  Future<void> savePattern(SewingPattern pattern) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      await txn.insert(AppDatabase.tablePatterns, pattern.toMap());
+    });
+    // Invalider le cache
+    _patternsById = null;
+  }
+
+  /// Mettre à jour un patron existant dans la base de données.
+  Future<void> updatePattern(SewingPattern pattern) async {
+    final db = await _db;
+    await db.update(
+      AppDatabase.tablePatterns,
+      pattern.toMap(),
+      where: 'id = ?',
+      whereArgs: [pattern.id],
+    );
+    // Invalider le cache
+    _patternsById = null;
+  }
+
+  /// Supprimer un patron de la base de données (seulement les patrons personnalisés).
+  Future<void> deletePattern(String patternId) async {
+    // Ne pas supprimer les patrons par défaut
+    final defaultIds = kDefaultMalianPatterns.map((p) => p.id).toList();
+    if (defaultIds.contains(patternId)) return;
+
+    final db = await _db;
+    await db.delete(
+      AppDatabase.tablePatterns,
+      where: 'id = ?',
+      whereArgs: [patternId],
+    );
+    // Invalider le cache
+    _patternsById = null;
+  }
+
+  /// Obtenir tous les patrons (patrons par défaut + utilisateur créé).
+  Future<Map<String, SewingPattern>> getAllPatterns() async {
+    return await ensurePatternsLoaded();
+  }
+
+  /// Vérifier si un identifiant de patron existe.
+  Future<bool> patternExists(String patternId) async {
+    final patterns = await ensurePatternsLoaded();
+    return patterns.containsKey(patternId);
+  }
 
   // ---------------------------------------------------------------- Clients
 
@@ -163,11 +242,7 @@ class CoutureRepository {
       ORDER BY s.delivery_date ASC
       LIMIT ?
       ''',
-      [
-        start.millisecondsSinceEpoch,
-        end.millisecondsSinceEpoch,
-        limit,
-      ],
+      [start.millisecondsSinceEpoch, end.millisecondsSinceEpoch, limit],
     );
 
     return rows.map((row) {
