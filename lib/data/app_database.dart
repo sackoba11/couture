@@ -8,7 +8,7 @@ class AppDatabase {
   AppDatabase._();
 
   static final AppDatabase instance = AppDatabase._();
-  static const int _version = 2;
+  static const int _version = 3;
 
   Database? _database;
   Future<Database>? _opening;
@@ -45,15 +45,15 @@ class AppDatabase {
 
   Future<Database> _open() async {
     final factory = _factoryOverride ?? databaseFactory;
-    final path =
-        _pathOverride ?? p.join(await factory.getDatabasesPath(), 'couture.db');
-    return factory.openDatabase(
+    final path = _pathOverride ?? p.join(await factory.getDatabasesPath(), 'couture.db');
+
+    final db = await factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
         version: _version,
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: (db, version) async {
-          await db.execute('''
+          await db.execute('''\
             CREATE TABLE clients (
               id TEXT PRIMARY KEY,
               full_name TEXT NOT NULL,
@@ -63,7 +63,7 @@ class AppDatabase {
               updated_at INTEGER NOT NULL
             )
           ''');
-          await db.execute('''
+          await db.execute('''\
             CREATE TABLE sheets (
               id TEXT PRIMARY KEY,
               client_id TEXT NOT NULL,
@@ -79,6 +79,21 @@ class AppDatabase {
               created_at INTEGER NOT NULL,
               updated_at INTEGER NOT NULL,
               FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
+            )
+          ''');
+          await db.execute('''\
+            CREATE TABLE patterns (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              tagline TEXT,
+              description TEXT,
+              garment_type TEXT NOT NULL,
+              silhouette TEXT,
+              key_measurements TEXT NOT NULL DEFAULT '[]',
+              fabric TEXT,
+              tip TEXT,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL
             )
           ''');
           await db.execute(
@@ -98,11 +113,14 @@ class AppDatabase {
               'CREATE INDEX idx_sheets_delivery ON sheets (delivery_date)',
             );
           }
+          // oldVersion < 3: la table patterns est déjà créée dans onCreate
         },
       ),
     );
+    return db;
   }
 
+  /// Permet aux tests d'utiliser une base en mémoire.
   Future<void> close() async {
     await _database?.close();
     _database = null;
