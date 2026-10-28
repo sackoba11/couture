@@ -60,15 +60,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _createClient() async {
-    final created = await Navigator.of(
-      context,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const ClientFormScreen()));
+    final created = await Navigator.of(context).push<bool>(
+      PageRouteBuilder<bool>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const ClientFormScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
+      ),
+    );
     if (created == true) _reload();
   }
 
   Future<void> _openClient(Client client) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ClientDetailScreen(client: client)),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ClientDetailScreen(client: client),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
+      ),
     );
     if (mounted) _reload();
   }
@@ -77,12 +91,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final client = await showClientPicker(context);
     if (client == null || !mounted) return;
     final sheetId = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => SheetFormScreen(client: client)),
+      PageRouteBuilder<String>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            SheetFormScreen(client: client),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
+      ),
     );
     if (!mounted) return;
     if (sheetId != null) {
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => SheetSummaryScreen(sheetId: sheetId)),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              SheetSummaryScreen(sheetId: sheetId),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 250),
+        ),
       );
     }
     if (mounted) _reload();

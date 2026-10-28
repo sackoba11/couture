@@ -8,7 +8,7 @@ class AppDatabase {
   AppDatabase._();
 
   static final AppDatabase instance = AppDatabase._();
-  static const int _version = 3;
+  static const int _version = 4;
 
   static const String tablePatterns = 'patterns';
 
@@ -94,6 +94,7 @@ class AppDatabase {
               key_measurements TEXT NOT NULL DEFAULT '[]',
               fabric TEXT,
               tip TEXT,
+              is_default INTEGER NOT NULL DEFAULT 0,
               created_at INTEGER NOT NULL,
               updated_at INTEGER NOT NULL
             )

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 /// Silhouette utilisée par le dessin de patron.
@@ -82,10 +84,14 @@ class SewingPattern {
 
   /// Convertir de Map vers SewingPattern (depuis la base de données).
   factory SewingPattern.fromMap(Map<String, dynamic> map) {
-    final keyMeasurements = (map['key_measurements'] as List?)
-        ?.map((item) => item as String)
-        .toList() ??
-        [];
+    final keyMeasurementsRaw = map['key_measurements'];
+    final keyMeasurements = <String>[];
+    if (keyMeasurementsRaw is String) {
+      final decoded = jsonDecode(keyMeasurementsRaw) as List<dynamic>;
+      keyMeasurements.addAll(decoded.cast<String>());
+    } else if (keyMeasurementsRaw is List) {
+      keyMeasurements.addAll(keyMeasurementsRaw.cast<String>());
+    }
 
     return SewingPattern(
       id: (map['id'] as String?) ?? '',
@@ -103,6 +109,7 @@ class SewingPattern {
 
   /// Convertir de SewingPattern vers Map (pour la base de données).
   Map<String, dynamic> toMap() {
+    final now = DateTime.now().millisecondsSinceEpoch;
     return {
       'id': id,
       'name': name,
@@ -110,10 +117,12 @@ class SewingPattern {
       'description': description,
       'garment_type': garmentType,
       'silhouette': _silhouetteToString(),
-      'key_measurements': keyMeasurements,
+      'key_measurements': jsonEncode(keyMeasurements),
       'fabric': fabric,
       'tip': tip,
       'is_default': isDefault ? 1 : 0,
+      'created_at': now,
+      'updated_at': now,
     };
   }
 

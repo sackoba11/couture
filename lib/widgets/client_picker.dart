@@ -16,7 +16,16 @@ Future<Client?> showClientPicker(BuildContext context) async {
   if (overviews.isEmpty) {
     final created = await Navigator.of(
       context,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const ClientFormScreen()));
+    ).push<bool>(
+      PageRouteBuilder<bool>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const ClientFormScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
+      ),
+    );
     if (created != true) return null;
     final refreshed = await repository.clients();
     return refreshed.isEmpty ? null : refreshed.first.client;
