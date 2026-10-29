@@ -62,22 +62,17 @@ class CoutureRepository {
   /// Enregistrer un nouveau patron dans la base de données.
   Future<void> savePattern(SewingPattern pattern) async {
     final db = await _db;
-    await db.transaction((txn) async {
-      await txn.insert(AppDatabase.tablePatterns, pattern.toMap());
-    });
+    await _upsert(db, AppDatabase.tablePatterns, pattern.toMap());
     // Invalider le cache
     _patternsById = null;
   }
 
   /// Mettre à jour un patron existant dans la base de données.
+  /// Utilise upsert pour créer le patron s'il n'existe pas encore (cas des
+  /// patrons par défaut qui sont d'abord des constantes en mémoire).
   Future<void> updatePattern(SewingPattern pattern) async {
     final db = await _db;
-    await db.update(
-      AppDatabase.tablePatterns,
-      pattern.toMap(),
-      where: 'id = ?',
-      whereArgs: [pattern.id],
-    );
+    await _upsert(db, AppDatabase.tablePatterns, pattern.toMap());
     // Invalider le cache
     _patternsById = null;
   }
