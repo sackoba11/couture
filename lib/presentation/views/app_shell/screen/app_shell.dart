@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'home_screen.dart';
-import 'patterns_screen.dart';
+import '../../home/screen/home_screen.dart';
+import '../../pattern/screens/patterns_screen.dart';
 
 /// Navigation principale : clients de l'atelier et catalogue de patrons.
 class AppShell extends StatefulWidget {

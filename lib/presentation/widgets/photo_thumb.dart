@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../data/media_storage.dart';
+import '../../data/data_sources/locale/media_storage.dart';
 
 /// Vignette d'une photo enregistrée dans le dossier privé de l'app.
 class PhotoThumb extends StatefulWidget {

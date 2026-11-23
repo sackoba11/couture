@@ -1,15 +1,15 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:couture/data/app_database.dart';
-import 'package:couture/data/couture_repository.dart';
-import 'package:couture/models/client.dart';
-import 'package:couture/models/measurement_sheet.dart';
-import 'package:couture/models/pattern.dart';
-import 'package:couture/screens/home_screen.dart';
-import 'package:couture/screens/sheet_form_screen.dart';
-import 'package:couture/screens/sheet_summary_screen.dart';
-import 'package:couture/widgets/pattern_sketch.dart';
+import 'package:couture/data/data_sources/locale/app_database.dart';
+import 'package:couture/data/repositories/couture_repository/couture_repository.dart';
+import 'package:couture/data/models/client/client.dart';
+import 'package:couture/data/models/measurement_sheet/measurement_sheet.dart';
+import 'package:couture/data/models/pattern/pattern.dart';
+import 'package:couture/presentation/views/home/screen/home_screen.dart';
+import 'package:couture/presentation/views/sheet/screens/sheet_form_screen.dart';
+import 'package:couture/presentation/views/sheet/screens/sheet_summary_screen.dart';
+import 'package:couture/presentation/widgets/pattern_sketch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';

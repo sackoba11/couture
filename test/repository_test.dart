@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:couture/data/app_database.dart';
-import 'package:couture/data/couture_repository.dart';
-import 'package:couture/models/client.dart';
-import 'package:couture/models/measurement_sheet.dart';
-import 'package:couture/utils/formatters.dart';
+import 'package:couture/data/data_sources/locale/app_database.dart';
+import 'package:couture/data/repositories/couture_repository/couture_repository.dart';
+import 'package:couture/data/models/client/client.dart';
+import 'package:couture/data/models/measurement_sheet/measurement_sheet.dart';
+import 'package:couture/core/utils/formatters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';

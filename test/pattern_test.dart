@@ -1,6 +1,6 @@
-import 'package:couture/models/measurement.dart';
-import 'package:couture/models/pattern.dart';
-import 'package:couture/utils/formatters.dart';
+import 'package:couture/data/models/measurement/measurement.dart';
+import 'package:couture/data/models/pattern/pattern.dart';
+import 'package:couture/core/utils/formatters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 

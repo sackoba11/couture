@@ -1,11 +1,11 @@
 import 'package:sqflite/sqflite.dart';
 
-import '../models/client.dart';
-import '../models/measurement_sheet.dart';
-import '../models/pattern.dart';
-import '../utils/formatters.dart';
-import 'app_database.dart';
-import 'media_storage.dart';
+import '../../models/client/client.dart';
+import '../../models/measurement_sheet/measurement_sheet.dart';
+import '../../models/pattern/pattern.dart';
+import '../../../core/utils/formatters.dart';
+import '../../data_sources/locale/app_database.dart';
+import '../../data_sources/locale/media_storage.dart';
 
 /// Une fiche dont la livraison approche, avec son client.
 class DeliveryOverview {

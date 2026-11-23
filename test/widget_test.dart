@@ -1,8 +1,8 @@
-import 'package:couture/models/pattern.dart';
-import 'package:couture/screens/patterns_screen.dart';
-import 'package:couture/widgets/client_avatar.dart';
-import 'package:couture/widgets/empty_state.dart';
-import 'package:couture/widgets/pattern_sketch.dart';
+import 'package:couture/data/models/pattern/pattern.dart';
+import 'package:couture/presentation/views/pattern/screens/patterns_screen.dart';
+import 'package:couture/presentation/widgets/client_avatar.dart';
+import 'package:couture/presentation/widgets/empty_state.dart';
+import 'package:couture/presentation/widgets/pattern_sketch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

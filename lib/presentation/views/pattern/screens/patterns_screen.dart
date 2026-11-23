@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../data/couture_repository.dart';
-import '../models/pattern.dart';
-import '../widgets/section_card.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/models/pattern/pattern.dart';
+import '../../../widgets/section_card.dart';
 import 'pattern_detail_screen.dart';
 import 'pattern_form_screen.dart';
 

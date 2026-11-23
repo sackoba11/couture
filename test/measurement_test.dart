@@ -1,5 +1,5 @@
-import 'package:couture/models/measurement.dart';
-import 'package:couture/models/measurement_sheet.dart';
+import 'package:couture/data/models/measurement/measurement.dart';
+import 'package:couture/data/models/measurement_sheet/measurement_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 

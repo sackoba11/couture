@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../data/media_storage.dart';
+import '../../../../data/data_sources/locale/media_storage.dart';
 
 /// Affichage plein écran des photos d'une fiche, avec zoom.
 class PhotoViewerScreen extends StatefulWidget {

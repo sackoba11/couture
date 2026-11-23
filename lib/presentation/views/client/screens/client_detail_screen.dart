@@ -3,18 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../data/couture_repository.dart';
-import '../models/client.dart';
-import '../models/measurement_sheet.dart';
-import '../utils/formatters.dart';
-import '../utils/garment_style.dart';
-import '../widgets/client_avatar.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/photo_thumb.dart';
-import '../widgets/section_card.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/models/client/client.dart';
+import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/garment_style.dart';
+import '../../../widgets/client_avatar.dart';
+import '../../../widgets/empty_state.dart';
+import '../../../widgets/photo_thumb.dart';
+import '../../../widgets/section_card.dart';
 import 'client_form_screen.dart';
-import 'sheet_form_screen.dart';
-import 'sheet_summary_screen.dart';
+import '../../sheet/screens/sheet_form_screen.dart';
+import '../../sheet/screens/sheet_summary_screen.dart';
 
 /// Fiche d'un client : ses coordonnées et toutes ses fiches de mesure.
 class ClientDetailScreen extends StatefulWidget {

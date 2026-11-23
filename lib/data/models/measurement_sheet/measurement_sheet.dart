@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import '../utils/formatters.dart';
-import 'measurement.dart';
-import 'pattern.dart';
+import '../../../core/utils/formatters.dart';
+import '../measurement/measurement.dart';
+import '../pattern/pattern.dart';
 
 /// Une mesure libre ajoutée par le tailleur (« Tour de tête », etc.).
 class CustomMeasurement {

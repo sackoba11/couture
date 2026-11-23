@@ -2,10 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../data/couture_repository.dart';
-import '../models/measurement.dart';
-import '../models/pattern.dart';
-import '../widgets/section_card.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/models/measurement/measurement.dart';
+import '../../../../data/models/pattern/pattern.dart';
+import '../../../widgets/section_card.dart';
 
 /// Écran de création ou d'édition d'un patron de couture.
 /// Permet au tailleur de créer un patron personnalisé avec ses propres

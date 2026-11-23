@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../data/couture_repository.dart';
-import '../data/media_storage.dart';
-import '../models/client.dart';
-import '../models/measurement.dart';
-import '../models/measurement_sheet.dart';
-import '../models/pattern.dart';
-import '../utils/formatters.dart';
-import '../utils/garment_style.dart';
-import '../utils/photo_picker.dart';
-import '../widgets/client_avatar.dart';
-import '../widgets/photo_thumb.dart';
-import '../widgets/section_card.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/data_sources/locale/media_storage.dart';
+import '../../../../data/models/client/client.dart';
+import '../../../../data/models/measurement/measurement.dart';
+import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
+import '../../../../data/models/pattern/pattern.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/garment_style.dart';
+import '../../../../core/utils/photo_picker.dart';
+import '../../../widgets/client_avatar.dart';
+import '../../../widgets/photo_thumb.dart';
+import '../../../widgets/section_card.dart';
 import 'photo_viewer_screen.dart';
 
 /// Saisie d'une fiche : vêtement, patron, livraison, photos et mesures.

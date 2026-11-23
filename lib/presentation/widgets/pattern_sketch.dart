@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../models/measurement.dart';
-import '../models/pattern.dart';
+import '../../data/models/measurement/measurement.dart';
+import '../../data/models/pattern/pattern.dart';
 
 /// Dessin d'un patron généré à partir des mesures d'une fiche.
 class PatternSketch extends StatelessWidget {

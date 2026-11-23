@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../data/couture_repository.dart';
-import '../models/client.dart';
-import '../screens/client_form_screen.dart';
-import '../utils/formatters.dart';
+import '../../data/repositories/couture_repository/couture_repository.dart';
+import '../../data/models/client/client.dart';
+import '../views/client/screens/client_form_screen.dart';
+import '../../core/utils/formatters.dart';
 import 'client_avatar.dart';
 
 /// Ouvre le sélecteur de client, en proposant d'en créer un si l'atelier

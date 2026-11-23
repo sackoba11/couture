@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../data/couture_repository.dart';
-import '../models/client.dart';
-import '../utils/formatters.dart';
-import '../widgets/client_avatar.dart';
-import '../widgets/client_picker.dart';
-import '../widgets/empty_state.dart';
-import 'client_detail_screen.dart';
-import 'client_form_screen.dart';
-import 'sheet_form_screen.dart';
-import 'sheet_summary_screen.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/models/client/client.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../widgets/client_avatar.dart';
+import '../../../widgets/client_picker.dart';
+import '../../../widgets/empty_state.dart';
+import '../../client/screens/client_detail_screen.dart';
+import '../../client/screens/client_form_screen.dart';
+import '../../sheet/screens/sheet_form_screen.dart';
+import '../../sheet/screens/sheet_summary_screen.dart';
 
 /// Écran d'accueil : la liste des clients de l'atelier.
 class HomeScreen extends StatefulWidget {

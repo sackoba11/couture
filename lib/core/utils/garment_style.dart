@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/measurement.dart';
+import '../../data/models/measurement/measurement.dart';
 
 /// Icône associée au type de vêtement.
 IconData garmentIcon(String type) {

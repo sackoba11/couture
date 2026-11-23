@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../data/couture_repository.dart';
-import '../models/measurement.dart';
-import '../models/pattern.dart';
-import '../widgets/client_picker.dart';
-import '../widgets/pattern_sketch.dart';
-import '../widgets/section_card.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/models/measurement/measurement.dart';
+import '../../../../data/models/pattern/pattern.dart';
+import '../../../widgets/client_picker.dart';
+import '../../../widgets/pattern_sketch.dart';
+import '../../../widgets/section_card.dart';
 import 'pattern_form_screen.dart';
-import 'sheet_form_screen.dart';
-import 'sheet_summary_screen.dart';
+import '../../sheet/screens/sheet_form_screen.dart';
+import '../../sheet/screens/sheet_summary_screen.dart';
 
 /// Détail d'un patron : dessin, mesures clés, tissus et conseils.
 class PatternDetailScreen extends StatefulWidget {

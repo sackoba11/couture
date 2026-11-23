@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../data/couture_repository.dart';
-import '../models/client.dart';
-import '../utils/ids.dart';
-import '../widgets/section_card.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
+import '../../../../data/models/client/client.dart';
+import '../../../../core/utils/ids.dart';
+import '../../../widgets/section_card.dart';
 
 /// Création ou modification d'un client.
 class ClientFormScreen extends StatefulWidget {
