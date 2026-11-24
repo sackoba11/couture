@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../../../data/repositories/couture_repository/couture_repository.dart';
 import '../../../../data/models/measurement/measurement.dart';
 import '../../../../data/models/pattern/pattern.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
 import '../../../widgets/client_picker.dart';
 import '../../../widgets/pattern_sketch.dart';
 import '../../../widgets/section_card.dart';
-import 'pattern_form_screen.dart';
 import '../../sheet/screens/sheet_form_screen.dart';
 import '../../sheet/screens/sheet_summary_screen.dart';
+import 'pattern_form_screen.dart';
 
 /// Détail d'un patron : dessin, mesures clés, tissus et conseils.
 class PatternDetailScreen extends StatefulWidget {
@@ -36,26 +36,22 @@ class _PatternDetailScreenState extends State<PatternDetailScreen> {
 
     final sheetId = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => SheetFormScreen(
-          client: client,
-          initialPattern: _pattern,
-        ),
+        builder: (_) =>
+            SheetFormScreen(),
       ),
     );
     if (!mounted || sheetId == null) return;
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SheetSummaryScreen(sheetId: sheetId)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => SheetSummaryScreen()));
   }
 
   Future<void> _editPattern() async {
     if (_pattern.isDefault) return;
 
     final updated = await Navigator.of(context).push<SewingPattern>(
-      MaterialPageRoute(
-        builder: (_) => PatternFormScreen(pattern: _pattern),
-      ),
+      MaterialPageRoute(builder: (_) => PatternFormScreen(pattern: _pattern)),
     );
     if (updated != null && mounted) {
       setState(() => _pattern = updated);
@@ -136,7 +132,11 @@ class _PatternDetailScreenState extends State<PatternDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(pattern.icon, size: 14, color: const Color(0xFF7B5B45)),
+                    Icon(
+                      pattern.icon,
+                      size: 14,
+                      color: const Color(0xFF7B5B45),
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       pattern.garmentType,

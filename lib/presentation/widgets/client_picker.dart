@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../data/repositories/couture_repository/couture_repository.dart';
-import '../../data/models/client/client.dart';
-import '../views/client/screens/client_form_screen.dart';
+import '../../core/services/navigation_service.dart';
 import '../../core/utils/formatters.dart';
+import '../../data/models/client/client.dart';
+import '../../data/repositories/couture_repository/couture_repository.dart';
+import '../../routes/app_routes.dart';
 import 'client_avatar.dart';
 
 /// Ouvre le sélecteur de client, en proposant d'en créer un si l'atelier
@@ -14,19 +15,18 @@ Future<Client?> showClientPicker(BuildContext context) async {
   if (!context.mounted) return null;
 
   if (overviews.isEmpty) {
-    final created = await Navigator.of(
-      context,
-    ).push<bool>(
-      PageRouteBuilder<bool>(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const ClientFormScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 250),
-      ),
-    );
-    if (created != true) return null;
+    // final created = await Navigator.of(context).push<bool>(
+    //   PageRouteBuilder<bool>(
+    //     pageBuilder: (context, animation, secondaryAnimation) =>
+    //         const ClientFormScreen(),
+    //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+    //       return FadeTransition(opacity: animation, child: child);
+    //     },
+    //     transitionDuration: const Duration(milliseconds: 250),
+    //   ),
+    // );
+    NavigationService.push(AppRoutes.clientForm);
+    // if (created != true) return null;
     final refreshed = await repository.clients();
     return refreshed.isEmpty ? null : refreshed.first.client;
   }

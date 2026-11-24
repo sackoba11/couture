@@ -3,18 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../data/repositories/couture_repository/couture_repository.dart';
-import '../../../../data/models/client/client.dart';
-import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/garment_style.dart';
+import '../../../../data/models/client/client.dart';
+import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
 import '../../../widgets/client_avatar.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/photo_thumb.dart';
 import '../../../widgets/section_card.dart';
-import 'client_form_screen.dart';
 import '../../sheet/screens/sheet_form_screen.dart';
 import '../../sheet/screens/sheet_summary_screen.dart';
+import 'client_form_screen.dart';
 
 /// Fiche d'un client : ses coordonnées et toutes ses fiches de mesure.
 class ClientDetailScreen extends StatefulWidget {
@@ -97,22 +97,22 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   Future<void> _createSheet() async {
-    final sheetId = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => SheetFormScreen(client: _client)),
-    );
+    final sheetId = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => SheetFormScreen()));
     if (!mounted) return;
     if (sheetId != null) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => SheetSummaryScreen(sheetId: sheetId)),
-      );
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => SheetSummaryScreen()));
     }
     if (mounted) _reload();
   }
 
   Future<void> _openSheet(MeasurementSheet sheet) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SheetSummaryScreen(sheetId: sheet.id)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => SheetSummaryScreen()));
     if (mounted) _reload();
   }
 
@@ -376,11 +376,7 @@ class _PatternPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.architecture,
-            size: 11,
-            color: Color(0xFF7A5C8C),
-          ),
+          const Icon(Icons.architecture, size: 11, color: Color(0xFF7A5C8C)),
           const SizedBox(width: 4),
           Text(
             name,

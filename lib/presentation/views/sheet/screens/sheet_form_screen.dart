@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../data/repositories/couture_repository/couture_repository.dart';
-import '../../../../data/data_sources/locale/media_storage.dart';
-import '../../../../data/models/client/client.dart';
-import '../../../../data/models/measurement/measurement.dart';
-import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
-import '../../../../data/models/pattern/pattern.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/garment_style.dart';
 import '../../../../core/utils/photo_picker.dart';
+import '../../../../data/data_sources/locale/media_storage.dart';
+import '../../../../data/models/measurement/measurement.dart';
+import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
+import '../../../../data/models/pattern/pattern.dart';
+import '../../../../data/repositories/couture_repository/couture_repository.dart';
 import '../../../widgets/client_avatar.dart';
 import '../../../widgets/photo_thumb.dart';
 import '../../../widgets/section_card.dart';
@@ -19,16 +18,16 @@ import 'photo_viewer_screen.dart';
 class SheetFormScreen extends StatefulWidget {
   const SheetFormScreen({
     super.key,
-    required this.client,
-    this.sheet,
-    this.initialPattern,
+    // required this.client,
+    // this.sheet,
+    // this.initialPattern,
   });
 
-  final Client client;
-  final MeasurementSheet? sheet;
+  // final Client client;
+  // final MeasurementSheet? sheet;
 
-  /// Patron présélectionné depuis le catalogue.
-  final SewingPattern? initialPattern;
+  // /// Patron présélectionné depuis le catalogue.
+  // final SewingPattern? initialPattern;
 
   @override
   State<SheetFormScreen> createState() => _SheetFormScreenState();
@@ -75,14 +74,13 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   bool _saving = false;
   bool _saved = false;
 
-  bool get _isEditing => widget.sheet != null;
+  // bool get _isEditing => widget.sheet != null;
 
-  SewingPattern get _pattern =>
-      resolvePatternIn(
-        patternId: _patternId,
-        garmentType: _garmentType,
-        patterns: _patterns,
-      );
+  SewingPattern get _pattern => resolvePatternIn(
+    patternId: _patternId,
+    garmentType: _garmentType,
+    patterns: _patterns,
+  );
 
   /// Mesures visibles : celles du patron, plus toute mesure déjà saisie
   /// (pour ne jamais masquer une valeur existante).
@@ -160,7 +158,9 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
                                       color: selected
-                                          ? Theme.of(context).colorScheme.primary
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                           : const Color(0xFFEFE3DC),
                                       width: selected ? 1.6 : 1,
                                     ),
@@ -172,7 +172,9 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                                         height: 48,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFFBF1EB),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: Icon(
                                           pattern.icon,
@@ -271,45 +273,43 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
   @override
   void initState() {
     super.initState();
-    final sheet = widget.sheet;
-    _sheetId = sheet?.id ?? 'sheet_${DateTime.now().microsecondsSinceEpoch}';
+    // final sheet = widget.sheet;
+    // _sheetId = sheet?.id ?? 'sheet_${DateTime.now().microsecondsSinceEpoch}';
     _titleController = TextEditingController(
-      text: sheet?.title ?? 'Fiche du ${formatShortDate(DateTime.now())}',
+      // text: sheet?.title ?? 'Fiche du ${formatShortDate(DateTime.now())}',
     );
-    _notesController = TextEditingController(text: sheet?.notes ?? '');
-    _garmentType =
-        sheet?.garmentType ??
-        widget.initialPattern?.garmentType ??
-        kGarmentTypes.first;
-    _patternId =
-        sheet?.patternId ??
-        widget.initialPattern?.id ??
-        kGarmentTypes.first;
-    _deliveryDate = sheet?.deliveryDate;
-    _fabricPhotos = [...?sheet?.fabricPhotos];
-    _modelPhotos = [...?sheet?.modelPhotos];
+    // _notesController = TextEditingController(text: sheet?.notes ?? '');
+    // _garmentType =
+    //     sheet?.garmentType ??
+    //     widget.initialPattern?.garmentType ??
+    //     kGarmentTypes.first;
+    // _patternId =
+    //     sheet?.patternId ?? widget.initialPattern?.id ?? kGarmentTypes.first;
+    // _deliveryDate = sheet?.deliveryDate;
+    // _fabricPhotos = [...?sheet?.fabricPhotos];
+    // _modelPhotos = [...?sheet?.modelPhotos];
     _extraMeasurements = {
-      for (final entry in (sheet?.measurements ?? const {}).entries)
-        if (!kFormMeasurementIds.contains(entry.key)) entry.key: entry.value,
+      // for (final entry in (sheet?.measurements ?? const {}).entries)
+      //   if (!kFormMeasurementIds.contains(entry.key)) entry.key: entry.value,
     };
 
     for (final group in kMeasurementGroups) {
       for (final field in group.fields) {
-        final value = sheet?.measurements[field.id];
+        // final value = sheet?.measurements[field.id];
         _measureControllers[field.id] = TextEditingController(
-          text: value == null ? '' : formatMeasure(value),
+          // text: value == null ? '' : formatMeasure(value),
         );
       }
     }
 
-    for (final custom in sheet?.customMeasurements ?? const []) {
-      _customRows.add(
-        _CustomMeasureRow(
-          label: custom.label,
-          value: formatMeasure(custom.value),
-        ),
-      );
-    }
+    // for (final custom in sheet?.customMeasurements ?? const []) {
+    //   _customRows.add(
+    //     _CustomMeasureRow(
+    //       label: custom.label,
+    //       value: formatMeasure(custom.value),
+    //     ),
+    //   );
+    // }
 
     // Charger les patrons depuis la base de données
     _loadPatterns();
@@ -323,9 +323,9 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
       _patterns = patterns;
       _patternsLoaded = true;
       // Si aucun patternId n'est défini (nouvelle fiche), choisir le défaut
-      if (widget.sheet == null && widget.initialPattern == null) {
-        _patternId = patternForGarmentIn(_garmentType, patterns).id;
-      }
+      // if (widget.sheet == null && widget.initialPattern == null) {
+      //   _patternId = patternForGarmentIn(_garmentType, patterns).id;
+      // }
     });
   }
 
@@ -505,7 +505,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
     final now = DateTime.now();
     final sheet = MeasurementSheet(
       id: _sheetId,
-      clientId: widget.client.id,
+      clientId: "0", // widget.client.id,
       title: _titleController.text.trim().isEmpty
           ? 'Fiche du ${formatShortDate(now)}'
           : _titleController.text.trim(),
@@ -517,7 +517,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
       fabricPhotos: List.unmodifiable(_fabricPhotos),
       modelPhotos: List.unmodifiable(_modelPhotos),
       notes: _notesController.text.trim(),
-      createdAt: widget.sheet?.createdAt ?? now,
+      createdAt: DateTime.now(), // widget.sheet?.createdAt ?? now,
       updatedAt: now,
     );
 
@@ -560,9 +560,10 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
         builder: (context) => AlertDialog(
           title: const Text('Abandonner cette fiche ?'),
           content: Text(
-            _isEditing
-                ? 'Les modifications non enregistrées seront perdues.'
-                : 'Les mesures et photos ajoutées seront perdues.',
+            "Les modifications non enregistrées seront perdues.",
+            // _isEditing
+            //     ? 'Les modifications non enregistrées seront perdues.'
+            //     : 'Les mesures et photos ajoutées seront perdues.',
           ),
           actions: [
             TextButton(
@@ -606,7 +607,9 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
             icon: const Icon(Icons.close),
             onPressed: _close,
           ),
-          title: Text(_isEditing ? 'Modifier la fiche' : 'Nouvelle fiche'),
+          title: Text(
+            "Nouvelle fiche", // _isEditing ? 'Modifier la fiche' : 'Nouvelle fiche'
+          ),
         ),
         body: Form(
           key: _formKey,
@@ -616,8 +619,8 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
               Row(
                 children: [
                   ClientAvatar(
-                    initials: widget.client.initials,
-                    seed: widget.client.fullName,
+                    initials: "widget.client.initials",
+                    seed: "widget.client.fullName",
                     size: 40,
                   ),
                   const SizedBox(width: 12),
@@ -626,7 +629,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.client.fullName,
+                          "widget.client.fullName",
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -767,8 +770,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                 trailing: _deliveryDate == null
                     ? null
                     : TextButton(
-                        onPressed: () =>
-                            setState(() => _deliveryDate = null),
+                        onPressed: () => setState(() => _deliveryDate = null),
                         child: const Text('Retirer'),
                       ),
                 child: Column(
@@ -776,10 +778,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
                   children: [
                     OutlinedButton.icon(
                       onPressed: _pickDeliveryDate,
-                      icon: const Icon(
-                        Icons.calendar_month_outlined,
-                        size: 18,
-                      ),
+                      icon: const Icon(Icons.calendar_month_outlined, size: 18),
                       label: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(

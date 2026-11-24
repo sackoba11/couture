@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../presentation/views/app_shell/screen/main_shell.dart';
+import '../presentation/views/client/screens/client_form_screen.dart';
 import '../presentation/views/home/screen/home_screen.dart';
 import '../presentation/views/pattern/screens/patterns_screen.dart';
+import '../presentation/views/sheet/screens/sheet_form_screen.dart';
+import '../presentation/views/sheet/screens/sheet_summary_screen.dart';
 import 'app_routes.dart';
 
 final Tween<Offset> _slideTween = Tween(
@@ -12,9 +15,9 @@ final Tween<Offset> _slideTween = Tween(
 );
 final Tween<double> _fadeTween = Tween(begin: 0.0, end: 1.0);
 const Curve _pageCurve = Curves.easeInOut;
-const Duration _defaultTransitionDuration = Duration(milliseconds: 300);
+const Duration _defaultTransitionDuration = Duration(milliseconds: 250);
 
-CustomTransitionPage _buildSlideFadePage({
+CustomTransitionPage buildSlideFadePage({
   required GoRouterState state,
   required Widget child,
   Duration? duration,
@@ -36,6 +39,24 @@ CustomTransitionPage _buildSlideFadePage({
   );
 }
 
+CustomTransitionPage<void> _buildFadePage({
+  required GoRouterState state,
+  required Widget child,
+  Duration duration = const Duration(milliseconds: 250),
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: duration,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+        child: child,
+      );
+    },
+  );
+}
+
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class NavKeys {
@@ -51,6 +72,23 @@ final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: AppRoutes.home,
   routes: [
+    GoRoute(
+      path: AppRoutes.clientForm,
+      pageBuilder: (context, state) =>
+          _buildFadePage(state: state, child: ClientFormScreen()),
+    ),
+    GoRoute(
+      path: AppRoutes.sheetSummary,
+      pageBuilder: (context, state) =>
+          _buildFadePage(state: state, child: SheetSummaryScreen()),
+    ),
+    GoRoute(
+      path: AppRoutes.sheetSummary,
+      pageBuilder: (context, state) =>
+          _buildFadePage(state: state, child: SheetFormScreen()),
+    ),
+
+    // Navigation bar
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return MainShell(navigationShell: navigationShell);

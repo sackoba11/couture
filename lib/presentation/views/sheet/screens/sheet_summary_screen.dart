@@ -27,9 +27,9 @@ class _SummaryData {
 
 /// Résumé d'une fiche : photos, mesures et notes, prêts à relire ou partager.
 class SheetSummaryScreen extends StatefulWidget {
-  const SheetSummaryScreen({super.key, required this.sheetId});
+  const SheetSummaryScreen({super.key, });
 
-  final String sheetId;
+  // final String sheetId;
 
   @override
   State<SheetSummaryScreen> createState() => _SheetSummaryScreenState();
@@ -40,7 +40,7 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
   _SummaryData? _data;
 
   Future<_SummaryData?> _load() async {
-    final sheet = await _repository.sheet(widget.sheetId);
+    final sheet = await _repository.sheet("0");
     if (sheet == null) return null;
     final client = await _repository.client(sheet.clientId);
     return _SummaryData(sheet: sheet, client: client);
@@ -60,7 +60,7 @@ class _SheetSummaryScreenState extends State<SheetSummaryScreen> {
   Future<void> _edit(MeasurementSheet sheet, Client client) async {
     final saved = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => SheetFormScreen(client: client, sheet: sheet),
+        builder: (_) => SheetFormScreen(),
       ),
     );
     if (!mounted || saved == null) return;
