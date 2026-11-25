@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:get/get.dart';
 
+import 'core/bindings/app_bindings.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
 
@@ -9,11 +11,11 @@ class Root extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return GetMaterialApp.router(
       debugShowCheckedModeBanner: false,
+      initialBinding: AppBindings(),
       theme: AppTheme.light(),
-      // darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.system,
       routerDelegate: appRouter.routerDelegate,
       routeInformationParser: appRouter.routeInformationParser,
       routeInformationProvider: appRouter.routeInformationProvider,

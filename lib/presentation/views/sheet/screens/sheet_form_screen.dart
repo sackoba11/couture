@@ -283,7 +283,7 @@ class _SheetFormScreenState extends State<SheetFormScreen> {
     //     sheet?.garmentType ??
     //     widget.initialPattern?.garmentType ??
     //     kGarmentTypes.first;
-    // _patternId =
+    _patternId = "grand_boubou";
     //     sheet?.patternId ?? widget.initialPattern?.id ?? kGarmentTypes.first;
     // _deliveryDate = sheet?.deliveryDate;
     // _fabricPhotos = [...?sheet?.fabricPhotos];

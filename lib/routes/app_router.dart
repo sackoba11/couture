@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../presentation/views/app_shell/screen/main_shell.dart';
+import '../presentation/views/client/screens/client_detail_screen.dart';
 import '../presentation/views/client/screens/client_form_screen.dart';
 import '../presentation/views/home/screen/home_screen.dart';
 import '../presentation/views/pattern/screens/patterns_screen.dart';
@@ -76,6 +77,11 @@ final appRouter = GoRouter(
       path: AppRoutes.clientForm,
       pageBuilder: (context, state) =>
           _buildFadePage(state: state, child: ClientFormScreen()),
+    ),
+    GoRoute(
+      path: AppRoutes.clientDetails,
+      pageBuilder: (context, state) =>
+          _buildFadePage(state: state, child: ClientDetailScreen()),
     ),
     GoRoute(
       path: AppRoutes.sheetSummary,

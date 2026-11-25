@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/garment_style.dart';
@@ -14,29 +15,27 @@ import '../../../widgets/photo_thumb.dart';
 import '../../../widgets/section_card.dart';
 import '../../sheet/screens/sheet_form_screen.dart';
 import '../../sheet/screens/sheet_summary_screen.dart';
+import '../controller/client_controller.dart';
 import 'client_form_screen.dart';
 
-/// Fiche d'un client : ses coordonnées et toutes ses fiches de mesure.
-class ClientDetailScreen extends StatefulWidget {
-  const ClientDetailScreen({super.key, required this.client});
-
-  final Client client;
-
-  @override
-  State<ClientDetailScreen> createState() => _ClientDetailScreenState();
-}
-
-class _ClientDetailScreenState extends State<ClientDetailScreen> {
+class ClientDetailScreen extends GetView<ClientController> {
+  ClientDetailScreen({super.key});
   final CoutureRepository _repository = CoutureRepository.instance;
 
   late Client _client;
-  late Future<List<MeasurementSheet>> _sheets;
+  
+
 
   @override
   void initState() {
     super.initState();
-    _client = widget.client;
-    _sheets = _repository.sheetsForClient(_client.id);
+    _client = Client(
+      id: "0",
+      fullName: "",
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    _
   }
 
   void _reload() {

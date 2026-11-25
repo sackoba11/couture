@@ -1,82 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
-import '../../../../data/repositories/couture_repository/couture_repository.dart';
-import '../../../../data/models/client/client.dart';
-import '../../../../core/utils/ids.dart';
 import '../../../widgets/section_card.dart';
+import '../controller/client_controller.dart';
 
-/// Création ou modification d'un client.
-class ClientFormScreen extends StatefulWidget {
-  const ClientFormScreen({super.key, this.client});
-
-  final Client? client;
-
-  @override
-  State<ClientFormScreen> createState() => _ClientFormScreenState();
-}
-
-class _ClientFormScreenState extends State<ClientFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late final TextEditingController _phoneController;
-  late final TextEditingController _notesController;
-  bool _saving = false;
-
-  bool get _isEditing => widget.client != null;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.client?.fullName);
-    _phoneController = TextEditingController(text: widget.client?.phone);
-    _notesController = TextEditingController(text: widget.client?.notes);
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _saving) return;
-    setState(() => _saving = true);
-
-    final now = DateTime.now();
-    final existing = widget.client;
-    final client = Client(
-      id: existing?.id ?? newId('client'),
-      fullName: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      notes: _notesController.text.trim(),
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    );
-
-    try {
-      await CoutureRepository.instance.saveClient(client);
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Enregistrement impossible : $error')),
-      );
-    }
-  }
+class ClientFormScreen extends GetView<ClientController> {
+  const ClientFormScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Modifier le client' : 'Nouveau client'),
+        title: Text(
+          controller.isEditing ? 'Modifier le client' : 'Nouveau client',
+        ),
       ),
       body: Form(
-        key: _formKey,
+        key: controller.formKey,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
@@ -86,10 +27,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               child: Column(
                 children: [
                   TextFormField(
-                    controller: _nameController,
+                    controller: controller.nameController,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
-                    autofocus: !_isEditing,
+                    autofocus: !controller.isEditing,
                     decoration: const InputDecoration(
                       labelText: 'Nom complet *',
                       hintText: 'Ex. Awa Diop',
@@ -104,7 +45,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
-                    controller: _phoneController,
+                    controller: controller.phoneController,
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
                     inputFormatters: [
@@ -126,7 +67,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               title: 'Notes',
               icon: Icons.notes,
               child: TextFormField(
-                controller: _notesController,
+                controller: controller.notesController,
                 minLines: 3,
                 maxLines: 6,
                 textCapitalization: TextCapitalization.sentences,
@@ -141,8 +82,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: FilledButton.icon(
-          onPressed: _saving ? null : _save,
-          icon: _saving
+          onPressed: controller.saving.value
+              ? null
+              : () => controller.save(context: context),
+          icon: controller.saving.value
               ? const SizedBox(
                   width: 18,
                   height: 18,
@@ -152,7 +95,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   ),
                 )
               : const Icon(Icons.check),
-          label: Text(_saving ? 'Enregistrement…' : 'Enregistrer'),
+          label: Text(
+            controller.saving.value ? 'Enregistrement…' : 'Enregistrer',
+          ),
         ),
       ),
     );
