@@ -10,7 +10,7 @@ import '../../../../data/models/measurement/measurement.dart';
 import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
 import '../../../../data/models/pattern/pattern.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/garment_style.dart';
+import '../../../widgets/garmen_chip.dart';
 import '../../../widgets/client_avatar.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/pattern_sketch.dart';

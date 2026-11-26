@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../core/services/navigation_service.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../widgets/empty_state.dart';
+import '../../client/controller/client_controller.dart';
 import '../controller/home_controller.dart';
 import '../widgets/client_card.dart';
 import '../widgets/delivery_banner.dart';
@@ -15,6 +16,7 @@ class HomeScreen extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final clientController = Get.find<ClientController>();
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 78,
@@ -37,7 +39,7 @@ class HomeScreen extends GetView<HomeController> {
         actions: [
           IconButton(
             tooltip: 'Nouveau client',
-            onPressed: () => NavigationService.push(AppRoutes.clientForm),
+            onPressed: clientController.createClient,
             icon: const Icon(Icons.person_add_alt_1_rounded),
           ),
         ],
@@ -47,6 +49,7 @@ class HomeScreen extends GetView<HomeController> {
           SearchSection(
             searchController: controller.searchController,
             onSearchChanged: controller.onSearchChanged,
+            delete: controller.onSearchDelete,
           ),
           Obx(() {
             if (controller.deliveries.isEmpty) return const SizedBox.shrink();
@@ -68,10 +71,7 @@ class HomeScreen extends GetView<HomeController> {
                     message:
                         'Aucun client ne correspond à « ${controller.query} ».',
                     action: OutlinedButton(
-                      onPressed: () {
-                        controller.searchController.clear();
-                        controller.refreshData(queryText: '');
-                      },
+                      onPressed: controller.onSearchDelete,
                       child: const Text('Effacer la recherche'),
                     ),
                   );
@@ -83,8 +83,7 @@ class HomeScreen extends GetView<HomeController> {
                       'Ajoutez votre premier client, prenez ses mesures et '
                       'gardez les photos du tissu et du modèle au même endroit.',
                   action: FilledButton.icon(
-                    onPressed: () =>
-                        NavigationService.push(AppRoutes.clientForm),
+                    onPressed: clientController.createClient,
                     icon: const Icon(Icons.person_add_alt_1),
                     label: const Text('Ajouter un client'),
                   ),
@@ -103,8 +102,12 @@ class HomeScreen extends GetView<HomeController> {
                     final overview = controller.clients[index];
                     return ClientCard(
                       overview: overview,
-                      onTap: () =>
-                          NavigationService.push(AppRoutes.clientDetails),
+                      onTap: () async {
+                        await clientController.refreshClient(
+                          clientId: overview.client.id,
+                        );
+                        NavigationService.push(AppRoutes.clientDetails);
+                      },
                     );
                   },
                 ),

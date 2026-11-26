@@ -10,10 +10,19 @@ class ClientFormScreen extends GetView<ClientController> {
 
   @override
   Widget build(BuildContext context) {
+    if (controller.isEditing.value && controller.newClient.value != null) {
+      controller.nameController.text = controller.newClient.value!.fullName;
+      controller.phoneController.text = controller.newClient.value!.phone;
+      controller.notesController.text = controller.newClient.value!.notes;
+    } else {
+      controller.nameController.text = "";
+      controller.phoneController.text = "";
+      controller.notesController.text = "";
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          controller.isEditing ? 'Modifier le client' : 'Nouveau client',
+          controller.isEditing.value ? 'Modifier le client' : 'Nouveau client',
         ),
       ),
       body: Form(
@@ -30,7 +39,7 @@ class ClientFormScreen extends GetView<ClientController> {
                     controller: controller.nameController,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
-                    autofocus: !controller.isEditing,
+                    autofocus: !controller.isEditing.value,
                     decoration: const InputDecoration(
                       labelText: 'Nom complet *',
                       hintText: 'Ex. Awa Diop',
@@ -79,24 +88,26 @@ class ClientFormScreen extends GetView<ClientController> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: FilledButton.icon(
-          onPressed: controller.saving.value
-              ? null
-              : () => controller.save(context: context),
-          icon: controller.saving.value
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.check),
-          label: Text(
-            controller.saving.value ? 'Enregistrement…' : 'Enregistrer',
+      bottomNavigationBar: Obx(
+        () => SafeArea(
+          minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: FilledButton.icon(
+            onPressed: controller.saving.value
+                ? null
+                : () => controller.save(context: context),
+            icon: controller.saving.value
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.check),
+            label: Text(
+              controller.saving.value ? 'Enregistrement…' : 'Enregistrer',
+            ),
           ),
         ),
       ),

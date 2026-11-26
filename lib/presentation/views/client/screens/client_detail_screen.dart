@@ -1,127 +1,24 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/garment_style.dart';
-import '../../../../data/models/client/client.dart';
-import '../../../../data/models/measurement_sheet/measurement_sheet.dart';
-import '../../../../data/repositories/couture_repository/couture_repository.dart';
-import '../../../widgets/client_avatar.dart';
+import '../../../../core/services/navigation_service.dart';
+import '../../../../routes/app_routes.dart';
 import '../../../widgets/empty_state.dart';
-import '../../../widgets/photo_thumb.dart';
-import '../../../widgets/section_card.dart';
-import '../../sheet/screens/sheet_form_screen.dart';
-import '../../sheet/screens/sheet_summary_screen.dart';
 import '../controller/client_controller.dart';
-import 'client_form_screen.dart';
+import '../widgets/infos_card.dart';
+import '../widgets/sheet_card.dart';
 
 class ClientDetailScreen extends GetView<ClientController> {
-  ClientDetailScreen({super.key});
-  final CoutureRepository _repository = CoutureRepository.instance;
-
-  late Client _client;
-  
-
-
-  @override
-  void initState() {
-    super.initState();
-    _client = Client(
-      id: "0",
-      fullName: "",
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    _
-  }
-
-  void _reload() {
-    setState(() {
-      _sheets = _repository.sheetsForClient(_client.id);
-    });
-  }
-
-  Future<void> _refreshClient() async {
-    final updated = await _repository.client(_client.id);
-    if (!mounted) return;
-    if (updated == null) {
-      Navigator.of(context).pop();
-      return;
-    }
-    setState(() {
-      _client = updated;
-      _sheets = _repository.sheetsForClient(_client.id);
-    });
-  }
-
-  Future<void> _editClient() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => ClientFormScreen(client: _client)),
-    );
-    if (saved == true) await _refreshClient();
-  }
-
-  Future<void> _deleteClient() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce client ?'),
-        content: Text(
-          'Toutes les fiches et photos de ${_client.fullName} seront '
-          'définitivement supprimées.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    await _repository.deleteClient(_client.id);
-    if (!mounted) return;
-    Navigator.of(context).pop(true);
-  }
-
-  Future<void> _createSheet() async {
-    final sheetId = await Navigator.of(
-      context,
-    ).push<String>(MaterialPageRoute(builder: (_) => SheetFormScreen()));
-    if (!mounted) return;
-    if (sheetId != null) {
-      await Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (_) => SheetSummaryScreen()));
-    }
-    if (mounted) _reload();
-  }
-
-  Future<void> _openSheet(MeasurementSheet sheet) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SheetSummaryScreen()));
-    if (mounted) _reload();
-  }
+  const ClientDetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final client = controller.currentClient.value;
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _client.fullName,
+          client?.fullName ?? "",
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -129,8 +26,12 @@ class ClientDetailScreen extends GetView<ClientController> {
           PopupMenuButton<String>(
             tooltip: 'Options',
             onSelected: (value) {
-              if (value == 'edit') _editClient();
-              if (value == 'delete') _deleteClient();
+              if (value == 'edit') {
+                controller.editClient();
+              }
+              if (value == 'delete') {
+                controller.deleteClient(context: context);
+              }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(
@@ -158,124 +59,11 @@ class ClientDetailScreen extends GetView<ClientController> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshClient,
+        onRefresh: () => controller.refreshClient(clientId: client!.id),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 104),
           children: [
-            SectionCard(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      ClientAvatar(
-                        initials: _client.initials,
-                        seed: _client.fullName,
-                        size: 62,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _client.fullName,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            if (_client.phone.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              GestureDetector(
-                                onTap: () async {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: _client.phone),
-                                  );
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Téléphone copié'),
-                                    ),
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.phone_outlined,
-                                      size: 15,
-                                      color: Color(0xFF8A767D),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      _client.phone,
-                                      style: const TextStyle(
-                                        fontSize: 13.5,
-                                        color: Color(0xFF8A767D),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Icon(
-                                      Icons.copy,
-                                      size: 13,
-                                      color: Color(0xFFB7A39B),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_client.notes.trim().isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFBF3EE),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _client.notes,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          height: 1.4,
-                          color: Color(0xFF6E5C62),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  FutureBuilder<List<MeasurementSheet>>(
-                    future: _sheets,
-                    builder: (context, snapshot) {
-                      final sheets = snapshot.data ?? const [];
-                      final photos = sheets.fold<int>(
-                        0,
-                        (sum, sheet) => sum + sheet.photoCount,
-                      );
-                      return Row(
-                        children: [
-                          _Stat(
-                            value: '${sheets.length}',
-                            label: plural(sheets.length, 'fiche'),
-                          ),
-                          const SizedBox(width: 10),
-                          _Stat(
-                            value: '$photos',
-                            label: plural(photos, 'photo'),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            InfosCard(),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -288,276 +76,59 @@ class ClientDetailScreen extends GetView<ClientController> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: _createSheet,
+                  onPressed: () => NavigationService.push(AppRoutes.sheetForm),
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Nouvelle'),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            FutureBuilder<List<MeasurementSheet>>(
-              future: _sheets,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return EmptyState(
-                    icon: Icons.error_outline,
-                    title: 'Chargement impossible',
-                    message: '${snapshot.error}',
-                    action: OutlinedButton(
-                      onPressed: _reload,
-                      child: const Text('Réessayer'),
-                    ),
-                  );
-                }
-
-                final sheets = snapshot.data ?? const [];
-                if (sheets.isEmpty) {
-                  return SizedBox(
-                    height: 300,
-                    child: EmptyState(
-                      icon: Icons.straighten,
-                      title: 'Aucune fiche pour ce client',
-                      message:
-                          'Commencez une fiche pour prendre les mesures et '
-                          'ajouter les photos du tissu et du modèle.',
-                      action: FilledButton.icon(
-                        onPressed: _createSheet,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Créer une fiche'),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: [
-                    for (final sheet in sheets) ...[
-                      _SheetCard(sheet: sheet, onTap: () => _openSheet(sheet)),
-                      const SizedBox(height: 10),
-                    ],
-                  ],
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
                 );
-              },
-            ),
+              }
+              final sheets = controller.sheets;
+              if (sheets.isEmpty) {
+                return EmptyState(
+                  icon: Icons.straighten,
+                  title: 'Aucune fiche pour ce client',
+                  message:
+                      'Commencez une fiche pour prendre les mesures et '
+                      'ajouter les photos du tissu et du modèle.',
+                  action: FilledButton.icon(
+                    onPressed: () =>
+                        NavigationService.push(AppRoutes.sheetForm),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Créer une fiche'),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final sheet in sheets) ...[
+                    SheetCard(
+                      sheet: sheet,
+                      onTap: () {
+                        controller.currentSheet.value = sheet;
+                        NavigationService.push(AppRoutes.sheetSummary);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              );
+            }),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
-        onPressed: _createSheet,
+        onPressed: () => NavigationService.push(AppRoutes.sheetForm),
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle fiche'),
-      ),
-    );
-  }
-}
-
-class _PatternPill extends StatelessWidget {
-  const _PatternPill({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F1FA),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE9DDF0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.architecture, size: 11, color: Color(0xFF7A5C8C)),
-          const SizedBox(width: 4),
-          Text(
-            name,
-            style: const TextStyle(
-              color: Color(0xFF7A5C8C),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-Color _deliveryColor(DateTime date) {
-  switch (deliveryStatus(date)) {
-    case DeliveryStatus.late:
-      return const Color(0xFFB3261E);
-    case DeliveryStatus.today:
-      return const Color(0xFF9C5227);
-    case DeliveryStatus.soon:
-      return const Color(0xFF8C6239);
-    case DeliveryStatus.upcoming:
-      return const Color(0xFF9A8A8F);
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
-
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFBF3EE),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF7A5C4C),
-            fontFamily: 'Roboto',
-          ),
-          children: [
-            TextSpan(
-              text: '$value ',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
-            TextSpan(text: label),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetCard extends StatelessWidget {
-  const _SheetCard({required this.sheet, required this.onTap});
-
-  final MeasurementSheet sheet;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final photos = sheet.allPhotos;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFEFE3DC)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (photos.isNotEmpty)
-                PhotoThumb(
-                  path: photos.first,
-                  width: 64,
-                  height: 80,
-                  borderRadius: 12,
-                )
-              else
-                Container(
-                  width: 64,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFBF3EE),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    garmentIcon(sheet.garmentType),
-                    color: const Color(0xFFB99B87),
-                  ),
-                ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      sheet.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        GarmentChip(type: sheet.garmentType, compact: true),
-                        _PatternPill(name: sheet.pattern.name),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${sheet.measuredCount} '
-                      '${plural(sheet.measuredCount, 'mesure')} · '
-                      '${sheet.photoCount} '
-                      '${plural(sheet.photoCount, 'photo')}',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: Color(0xFF8A767D),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      formatRelativeDate(sheet.updatedAt),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFB7A39B),
-                      ),
-                    ),
-                    if (sheet.deliveryDate != null) ...[
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.event_available_outlined,
-                            size: 12.5,
-                            color: _deliveryColor(sheet.deliveryDate!),
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              'Livraison '
-                              '${formatShortDate(sheet.deliveryDate!)} · '
-                              '${formatDeliveryCountdown(sheet.deliveryDate!)}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: _deliveryColor(sheet.deliveryDate!),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: Color(0xFFC3AFA6)),
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -89,7 +89,7 @@ final appRouter = GoRouter(
           _buildFadePage(state: state, child: SheetSummaryScreen()),
     ),
     GoRoute(
-      path: AppRoutes.sheetSummary,
+      path: AppRoutes.sheetForm,
       pageBuilder: (context, state) =>
           _buildFadePage(state: state, child: SheetFormScreen()),
     ),

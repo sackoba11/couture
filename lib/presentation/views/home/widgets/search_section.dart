@@ -5,9 +5,11 @@ class SearchSection extends StatelessWidget {
     super.key,
     required this.searchController,
     this.onSearchChanged,
+    this.delete,
   });
   final TextEditingController searchController;
   final Function(String)? onSearchChanged;
+  final VoidCallback? delete;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -27,7 +29,7 @@ class SearchSection extends StatelessWidget {
                   : IconButton(
                       tooltip: 'Effacer',
                       icon: const Icon(Icons.close, size: 20),
-                      onPressed: searchController.clear,
+                      onPressed: delete,
                     ),
               isDense: true,
             ),

@@ -5,6 +5,6 @@ abstract class AppRoutes {
   static const String clientForm = "/client-form";
   static const String clientDetails = "/client-details";
 
-  static const String sheetSummary = "/shett-summary";
-  static const String sheetForm = "/shett-form";
+  static const String sheetSummary = "/sheet-summary";
+  static const String sheetForm = "/sheet-form";
 }

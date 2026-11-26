@@ -8,6 +8,7 @@ import '../../../../data/models/client/client.dart';
 import '../../../../data/repositories/couture_repository/couture_repository.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../widgets/client_picker.dart';
+import '../../client/controller/client_controller.dart';
 
 class HomeController extends GetxController {
   final CoutureRepository repository = CoutureRepository.instance;
@@ -19,11 +20,14 @@ class HomeController extends GetxController {
   final isRefreshing = false.obs;
   Timer? debounce;
   String query = '';
-
+  final clientController = Get.find<ClientController>();
   @override
   void onInit() {
     super.onInit();
     initData();
+    ever(clientController.clients, (callback) {
+      clients.value = callback;
+    });
   }
 
   @override
@@ -53,6 +57,11 @@ class HomeController extends GetxController {
     debounce = Timer(const Duration(milliseconds: 250), () {
       refreshData(queryText: value);
     });
+  }
+
+  void onSearchDelete() {
+    searchController.clear();
+    refreshData(queryText: '');
   }
 
   Future<void> createSheet({required BuildContext context}) async {

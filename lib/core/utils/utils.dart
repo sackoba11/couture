@@ -29,4 +29,33 @@ class Utils {
       ),
     );
   }
+
+  static Future<bool?> getDialog({
+    required BuildContext context,
+    required String title,
+    content,
+    buttonText,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(buttonText),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/garment_style.dart';
+import '../../../widgets/garmen_chip.dart';
 import '../../../../core/utils/photo_picker.dart';
 import '../../../../data/data_sources/locale/media_storage.dart';
 import '../../../../data/models/measurement/measurement.dart';
